@@ -1,12 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
-import BotonNav from './btnNav'
+import Articulo from './Articulo'
 
 export default function App() {
   return (
     <View style={styles.container}>
-      <BotonNav texto="Hola"/>
-      <BotonNav texto="Chau"/>
-      <BotonNav texto="Qué"/>
+      <Articulo/>
+      <Articulo/>
+      <Articulo/>
+      <Articulo/>
     </View>
   );
 }
@@ -17,6 +18,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'gray',
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: "row",
+    flexDirection: "column",
   },
 });
