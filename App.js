@@ -1,33 +1,53 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View,} from 'react-native';
-import Header from './components/Header';
-import Btn from './components/btn';
+import React, { useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
-export default function App() {
-  return (  
-    <View style={styles.container}>
-      <Header/>
-      <View style={styles.cont}>
-        <Text style={{color: 'white'}}>Crear Cuenta</Text>
-        <StatusBar style="auto"/>
-        <Btn title='Continuar'/>
-      </View>
-      
-    </View>    
+import Register from './Pantallas/Register';
+import Home from './Pantallas/Home';
+import Perfil from './Pantallas/perfil';
+
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+function Tabs({ user }) {
+  return (
+    <Tab.Navigator>
+      <Tab.Screen name="Home">
+        {() => <Home user={user} />}
+      </Tab.Screen>
+      <Tab.Screen name="Perfil">
+        {() => <Perfil user={user} />}
+      </Tab.Screen>
+    </Tab.Navigator>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#252525',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  cont: {
-    flex: 1,
-    width: '100%',
-    backgroundColor: '#252525',
-    alignItems: 'center',
-  },
-});
+export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userData, setUserData] = useState({});
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {!isLoggedIn ? (
+          <Stack.Screen name="Register">
+            {props => (
+              <Register
+                {...props}
+                onRegister={(data) => {
+                  setUserData(data);
+                  setIsLoggedIn(true);
+                }}
+              />
+            )}
+          </Stack.Screen>
+        ) : (
+          <Stack.Screen name="Tabs">
+            {() => <Tabs user={userData} />}
+          </Stack.Screen>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}

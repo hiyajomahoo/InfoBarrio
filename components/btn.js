@@ -1,8 +1,8 @@
 import { Text, TouchableOpacity, StyleSheet } from 'react-native';
 
-function Btn({title}) {
+function Btn({ title, onPress }) {
     return (
-        <TouchableOpacity style={styles.boton}>
+        <TouchableOpacity style={styles.boton} onPress={onPress}>
             <Text style={{ color: 'white' }}>{title}</Text>
         </TouchableOpacity>
     );
