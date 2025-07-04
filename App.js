@@ -11,15 +11,22 @@ import Perfil from './Pantallas/perfil';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-function Tabs({ user }) {
+function Tabs({ user, onLogout }) {
   return (
-    <Tab.Navigator>
+    <Tab.Navigator>      
       <Tab.Screen name="Home" options={{tabBarIcon: ({}) => <FontAwesome size={24} name="home"/>}}> 
         {() => <Home user={user} />}
       </Tab.Screen>
+
       <Tab.Screen name="Perfil" options={{tabBarIcon: ({}) => <FontAwesome size={24} name="user"/>}}>
-        {() => <Perfil user={user} />}
+          { () => 
+            <Perfil
+              user={user}
+              onLogout={onLogout}
+            />
+          }
       </Tab.Screen>
+      
     </Tab.Navigator>
   );
 }
@@ -45,7 +52,13 @@ export default function App() {
           </Stack.Screen>
         ) : (
           <Stack.Screen name="Tabs">
-            {() => <Tabs user={userData} />}
+            {() => 
+            <Tabs 
+              user={userData} onLogout={() => {
+                setUserData({});
+                setIsLoggedIn(false);
+              }} 
+            />}
           </Stack.Screen>
         )}
       </Stack.Navigator>
