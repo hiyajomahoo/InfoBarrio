@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import FontAwesome from '@expo/vector-icons/FontAwesome'
 
 import Register from './Pantallas/Register';
 import Home from './Pantallas/Home';
@@ -12,13 +13,12 @@ const Tab = createBottomTabNavigator();
 
 function Tabs({ user, onLogout }) {
   return (
-    <Tab.Navigator>
-      
-      <Tab.Screen name="Home">
+    <Tab.Navigator>      
+      <Tab.Screen name="Home" options={{tabBarIcon: ({}) => <FontAwesome size={24} name="home"/>}}> 
         {() => <Home user={user} />}
       </Tab.Screen>
 
-      <Tab.Screen name="Perfil">
+      <Tab.Screen name="Perfil" options={{tabBarIcon: ({}) => <FontAwesome size={24} name="user"/>}}>
           { () => 
             <Perfil
               user={user}
