@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import Header from '../components/header';
 import Btn from '../components/btn';
-import { InputEmail, InputNumber, InputPassword, InputName } from '../components/inputs';
+import { InputArea } from '../components/inputs';
 
 import { useState } from 'react';
 
@@ -12,15 +12,16 @@ const [name, setName] = useState('');
 const [numero, setNumero] = useState('');
 const [password, setPassword] = useState('');
 
+
 return (
     <View style={styles.container}>
-        <Header />
+        <Header/>
+        <View style={styles.prueba}>
         <View style={styles.cont}>
-            <Text style={{ color: 'white' }}>Crear Cuenta</Text>
-            <InputName placeholder="Nombre" value={name} onChangeText={setName} />
-            <InputEmail placeholder="Correo electrónico" value={email} onChangeText={setEmail} />
-            <InputNumber placeholder="Número de teléfono" value={numero} onChangeText={setNumero} />
-            <InputPassword placeholder="Contraseña" value={password} onChangeText={setPassword} />
+            <InputArea placeholder="Nombre" value={name} onChangeText={setName} />
+            <InputArea placeholder="Correo electrónico" value={email} onChangeText={setEmail} keyboardType ="email-address"/>
+            <InputArea placeholder="Número de teléfono" value={numero} onChangeText={setNumero} keyboardType="numeric"/>
+            <InputArea placeholder="Contraseña" value={password} onChangeText={setPassword} keyboardType="password"/>
             <Btn
                 title="Continuar"
                 onPress={() => {
@@ -32,6 +33,7 @@ return (
                 }}
             />
             <StatusBar style="auto" />
+        </View>
         </View>
     </View>
     );
@@ -48,6 +50,10 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     backgroundColor: '#252525',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     },
+    prueba: {
+        flex: 1,
+        alignItems: "center"
+    }
 });

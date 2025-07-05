@@ -1,53 +1,33 @@
-import { TextInput, StyleSheet} from 'react-native';
+import { TextInput, StyleSheet, View, Text} from 'react-native';
+import FontAwesome from '@expo/vector-icons/FontAwesome'
+import { useState } from 'react';
 
-export function InputEmail({ placeholder, value, onChangeText }) {
-    return (
-        <TextInput
-            placeholder={placeholder}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={styles.Input}
-            value={value}
-            onChangeText={onChangeText}
-        />
-    );
-}
+export function InputArea({ placeholder, value, onChangeText, keyboardType = "default" }) {
+    const [mostrarPassword, setShowPassword] = useState(false)
+    const togglePassword = () => {
+        setShowPassword(!mostrarPassword);
+    }
 
-export function InputName({ placeholder, value, onChangeText }) {
     return (
-        <TextInput
-            placeholder={placeholder}
-            keyboardType="default"
-            autoCapitalize="none"
-            style={styles.Input}
-            value={value}
-            onChangeText={onChangeText}
-        />
-    );
-}
+        <View style={styles.contenedorTexto}>
+            <Text style={{color: "white"}}>{placeholder}</Text>
+            <TextInput
+                placeholder={placeholder}
+                keyboardType={keyboardType}
+                autoCapitalize="none"
+                secureTextEntry={ keyboardType == "password" ? !mostrarPassword : false}
+                style={styles.Input}
+                value={value}
+                onChangeText={onChangeText}
+            />        
+            {keyboardType == "password" ?
+            (   
+                <FontAwesome size={20} name='eye' color="white" onPress={togglePassword}/>
+            ) :
+            (null) 
+            }
 
-export function InputNumber({ placeholder, value, onChangeText }) {
-    return (
-        <TextInput
-            placeholder={placeholder}
-            keyboardType="numeric"
-            style={styles.Input}
-            value={value}
-            onChangeText={onChangeText}
-        />
-    );
-}
-
-export function InputPassword({ placeholder, value, onChangeText }) {
-    return (
-        <TextInput
-            placeholder={placeholder}
-            secureTextEntry={true}
-            autoCapitalize="none"
-            style={styles.Input}
-            value={value}
-            onChangeText={onChangeText}
-        />
+        </View>
     );
 }
 
@@ -61,5 +41,11 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 5,
         backgroundColor:'gray',
+    },
+
+    contenedorTexto: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
     }
 });
