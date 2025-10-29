@@ -11,12 +11,24 @@ import {
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 
-const PublicationScreen = () => {
+const PublicationScreen = ({ route, navigation }) => {
   const [location, setLocation] = useState(null);
+  const publication = route && route.params && route.params.publication ? route.params.publication : {};
 
   useEffect(() => {
     (async () => {
-      // Solicitar permisos de ubicación
+      // Si la publicación trae una ubicación (seleccionada en NuevaPublicacion), usarla
+      if (publication && publication.location) {
+        setLocation({
+          latitude: publication.location.latitude,
+          longitude: publication.location.longitude,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        });
+        return;
+      }
+
+      // Solicitar permisos de ubicación para centrar el mapa en la posición del usuario
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(
@@ -41,37 +53,47 @@ const PublicationScreen = () => {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Image
-          source={require("../assets/splash-icon.png")}
+          source={
+            publication.photos && publication.photos.length > 0
+              ? { uri: publication.photos[0] }
+              : require("../assets/splash-icon.png")
+          }
           style={styles.image}
         />
 
-        <Text style={styles.title}>Titulo de Publicacion</Text>
-        <Text style={styles.price}>$10.000</Text>
+        <Text style={styles.title}>{publication.titulo || "Titulo de Publicacion"}</Text>
+        <Text style={styles.price}>{publication.precio ? `$${publication.precio}` : ""}</Text>
 
         <TouchableOpacity style={styles.button}>
           <Text style={styles.buttonText}>Contactar</Text>
         </TouchableOpacity>
 
-        <Text style={styles.description}>
-          Lorem ipsum dolor sit amet consectetur adipiscing elit. Consectetur
-          adipiscing elit quisque faucibus ex sapien vitae. Ex sapien vitae
-          pellentesque sem placerat in id.
-        </Text>
+        <Text style={styles.description}>{publication.descripcion || ""}</Text>
+
+        {publication.ubicacion ? (
+          <Text style={{ color: "#666", marginBottom: 8 }}>
+            Ubicación: {publication.ubicacion}
+          </Text>
+        ) : null}
 
         {/* Mapa */}
         <View style={styles.mapPlaceholder}>
           {location ? (
-            <MapView
-              style={styles.map}
-              initialRegion={location}
-              showsUserLocation={true}
-            >
-              <Marker
-                coordinate={{ latitude: -34.66, longitude: -58.365 }}
-                title="Avellaneda"
-                description="Av. Mitre 1000"
-              />
-            </MapView>
+              <MapView
+                style={styles.map}
+                initialRegion={location}
+                showsUserLocation={true}
+              >
+                <Marker
+                  coordinate={
+                    publication && publication.location
+                      ? { latitude: publication.location.latitude, longitude: publication.location.longitude }
+                      : { latitude: -34.66, longitude: -58.365 }
+                  }
+                  title={publication.titulo || "Ubicación"}
+                  description={publication.ubicacion || ""}
+                />
+              </MapView>
           ) : (
             <Text style={{ textAlign: "center", marginTop: 20 }}>
               Cargando mapa...

@@ -9,7 +9,7 @@ import Register from "./Pantallas/Register";
 import Home from "./Pantallas/Home";
 import Recientes from "./Pantallas/Recientes";
 import NuevaPublicacion from "./Pantallas/NuevaPublicacion";
-import PublicationScreen from "./Pantallas/Publicacion";
+import Publicacion from "./Pantallas/Publicacion";
 import Perfil from "./Pantallas/perfil";
 
 const Stack = createNativeStackNavigator();
@@ -123,7 +123,7 @@ export default function App() {
             />
           )}
         />
-        <Stack.Screen name="Publicacion" component={PublicationScreen} options={{headerShown: true}}/>
+        <Stack.Screen name="Publicacion" component={Publicacion} options={{headerShown: true}}/>
       </Stack.Navigator>
     </NavigationContainer>
   );
