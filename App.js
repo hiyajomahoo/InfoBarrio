@@ -9,9 +9,8 @@ import Register from "./Pantallas/Register";
 import Home from "./Pantallas/Home";
 import Recientes from "./Pantallas/Recientes";
 import NuevaPublicacion from "./Pantallas/NuevaPublicacion";
-import Perfil from "./Pantallas/perfil";
-import Settings from "./Pantallas/Settings";
 import Publicacion from "./Pantallas/Publicacion";
+import Perfil from "./Pantallas/perfil";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -44,7 +43,7 @@ function Tabs({ userData, onLogout, navigation }) {
         }}
       />
       <Tab.Screen
-        name="Home"
+        name="Buscar"
         component={Home}
         options={{
           tabBarIcon: ({ color }) => (
@@ -53,7 +52,7 @@ function Tabs({ userData, onLogout, navigation }) {
         }}
       />
       <Tab.Screen
-        name="NuevaPublicacion"
+        name="Crear"
         component={NuevaPublicacion}
         options={{
           tabBarIcon: ({ color }) => (
@@ -62,22 +61,11 @@ function Tabs({ userData, onLogout, navigation }) {
         }}
       />
       <Tab.Screen
-        name="Recientes"
+        name="Inicio"
         component={Recientes}
         options={{
           tabBarIcon: ({ color }) => (
             <FontAwesome name="star" size={24} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Settings"
-        children={() => (
-          <Settings onLogout={onLogout} navigation={navigation} />
-        )}
-        options={{
-          tabBarIcon: ({ color }) => (
-            <FontAwesome name="cog" size={24} color={color} />
           ),
         }}
       />
@@ -135,10 +123,7 @@ export default function App() {
             />
           )}
         />
-        <Stack.Screen
-          name="Publicacion"
-          component={Publicacion}
-        />
+        <Stack.Screen name="Publicacion" component={Publicacion} options={{headerShown: true}}/>
       </Stack.Navigator>
     </NavigationContainer>
   );
