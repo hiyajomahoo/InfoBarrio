@@ -11,6 +11,7 @@ import Recientes from "./Pantallas/Recientes";
 import NuevaPublicacion from "./Pantallas/NuevaPublicacion";
 import Perfil from "./Pantallas/perfil";
 import Settings from "./Pantallas/Settings";
+import Publicacion from "./Pantallas/Publicacion";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -133,6 +134,10 @@ export default function App() {
               navigation={navigation}
             />
           )}
+        />
+        <Stack.Screen
+          name="Publicacion"
+          component={Publicacion}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,16 +7,82 @@ import {
   StyleSheet,
   Image,
   ScrollView,
+  Alert,
 } from "react-native";
+import MapView, { Marker } from "react-native-maps";
+import * as Location from "expo-location";
 
 const tipos = ["Venta", "Compra", "Alquiler", "Servicio"];
 
-export default function NuevaPublicacion() {
+export default function NuevaPublicacion({ navigation }) {
   const [tipo, setTipo] = useState("Venta");
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [precio, setPrecio] = useState("");
   const [ubicacion, setUbicacion] = useState("");
+
+  const [mapRegion, setMapRegion] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert(
+            "Permiso denegado",
+            "Necesitamos permiso para acceder a tu ubicación para centrar el mapa"
+          );
+          setMapRegion({
+            latitude: -34.6037,
+            longitude: -58.3816,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          });
+          return;
+        }
+
+        let userLocation = await Location.getCurrentPositionAsync({});
+        setMapRegion({
+          latitude: userLocation.coords.latitude,
+          longitude: userLocation.coords.longitude,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        });
+      } catch (err) {
+        console.log("Error obteniendo ubicación:", err);
+      }
+    })();
+  }, []);
+
+  const handlePublish = () => {
+    // Validaciones básicas
+    if (!titulo || titulo.trim().length === 0) {
+      Alert.alert("Campo requerido", "El título es obligatorio");
+      return;
+    }
+
+    if (!selectedLocation) {
+      Alert.alert(
+        "Ubicación requerida",
+        "Debes seleccionar la ubicación desde el mapa"
+      );
+      return;
+    }
+
+    const publication = {
+      tipo,
+      titulo: titulo.trim(),
+      descripcion: descripcion.trim(),
+      precio: precio.trim(),
+      ubicacion: ubicacion.trim(),
+      location: selectedLocation,
+      // fotos: [] // aquí podríamos añadir URIs si se implementa cámara/galería
+    };
+
+    // Navegar a la pantalla de la publicación recién creada pasando los datos
+    navigation.navigate("Publicacion", { publication });
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -77,15 +143,42 @@ export default function NuevaPublicacion() {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.label}>Ubicación</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="¡"
-            value={ubicacion}
-            onChangeText={setUbicacion}
-          />
+          {/* Mostrar coordenadas seleccionadas o mensaje */}
+          <View style={{ marginBottom: 8 }}>
+            <Text style={{ color: "#333" }}>
+              {selectedLocation
+                ? `${selectedLocation.latitude.toFixed(6)}, ${selectedLocation.longitude.toFixed(6)}`
+                : "Seleccioná un punto en el mapa abajo"}
+            </Text>
+          </View>
         </View>
       </View>
-      <TouchableOpacity style={styles.button}>
+
+      {/* Mapa para seleccionar ubicación */}
+      <Text style={styles.label}>Seleccionar ubicación en el mapa *</Text>
+      <View style={styles.mapContainer}>
+        {mapRegion ? (
+          <MapView
+            style={styles.map}
+            initialRegion={mapRegion}
+            onPress={(e) => {
+              const coord = e.nativeEvent.coordinate;
+              setSelectedLocation({
+                latitude: coord.latitude,
+                longitude: coord.longitude,
+              });
+              setUbicacion(`${coord.latitude.toFixed(6)}, ${coord.longitude.toFixed(6)}`);
+            }}
+          >
+            {selectedLocation && (
+              <Marker coordinate={selectedLocation} title="Ubicación seleccionada" />
+            )}
+          </MapView>
+        ) : (
+          <Text>Cargando mapa...</Text>
+        )}
+      </View>
+      <TouchableOpacity style={styles.button} onPress={handlePublish}>
         <Text style={styles.buttonText}>Publicar</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -151,4 +244,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  mapContainer: {
+    height: 220,
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 10,
+    backgroundColor: "#eee",
+  },
+  map: { flex: 1 },
 });
