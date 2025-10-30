@@ -11,10 +11,11 @@ import {
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
+import API_URL from "../config/api";
 
 const tipos = ["Venta", "Compra", "Alquiler", "Servicio"];
 
-export default function NuevaPublicacion({ navigation }) {
+export default function NuevaPublicacion({ navigation, userData }) {
   const [tipo, setTipo] = useState("Venta");
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -55,33 +56,51 @@ export default function NuevaPublicacion({ navigation }) {
     })();
   }, []);
 
-  const handlePublish = () => {
-    // Validaciones básicas
+  const handlePublish = async () => {
     if (!titulo || titulo.trim().length === 0) {
       Alert.alert("Campo requerido", "El título es obligatorio");
       return;
     }
-
     if (!selectedLocation) {
-      Alert.alert(
-        "Ubicación requerida",
-        "Debes seleccionar la ubicación desde el mapa"
-      );
+      Alert.alert("Ubicación requerida", "Debes seleccionar la ubicación desde el mapa");
+      return;
+    }
+    if (!userData || !userData.token) {
+      Alert.alert("Necesitas iniciar sesión", "Iniciá sesión para crear una publicación");
+      navigation.navigate("Login");
       return;
     }
 
-    const publication = {
-      tipo,
-      titulo: titulo.trim(),
-      descripcion: descripcion.trim(),
-      precio: precio.trim(),
-      ubicacion: ubicacion.trim(),
-      location: selectedLocation,
-      // fotos: [] // aquí podríamos añadir URIs si se implementa cámara/galería
+    const typeMap = { Venta: 1, Compra: 2, Alquiler: 3, Servicio: 4 };
+    const post = {
+      user_id: userData.id,
+      post_type_id: typeMap[tipo] || 1,
+      title: titulo.trim(),
+      description: descripcion.trim(),
+      price: precio.trim(),
+      status: "Disponible",
     };
 
-    // Navegar a la pantalla de la publicación recién creada pasando los datos
-    navigation.navigate("Publicacion", { publication });
+    try {
+  const res = await fetch(`${API_URL}/api/post`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${userData.token}`,
+        },
+        body: JSON.stringify(post),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        Alert.alert("Éxito", "Publicación creada correctamente");
+        navigation.navigate("Recientes");
+      } else {
+        Alert.alert("Error", data.message || "No se pudo crear la publicación");
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Error", "Error de conexión con el servidor");
+    }
   };
 
   return (

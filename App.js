@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -53,7 +53,9 @@ function Tabs({ userData, onLogout, navigation }) {
       />
       <Tab.Screen
         name="Crear"
-        component={NuevaPublicacion}
+        children={() => (
+          <NuevaPublicacion userData={userData} navigation={navigation} />
+        )}
         options={{
           tabBarIcon: ({ color }) => (
             <FontAwesome name="plus" size={24} color={color} />
@@ -77,17 +79,47 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState({});
 
+  useEffect(() => {
+    // intentar restaurar sesión desde AsyncStorage
+    (async () => {
+      try {
+        const AsyncStorage = await import('@react-native-async-storage/async-storage');
+        const raw = await AsyncStorage.default.getItem('userData');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          setUserData(parsed);
+          setIsLoggedIn(true);
+        }
+      } catch (e) {
+        // no hacer nada si falla la restauración
+      }
+    })();
+  }, []);
+
   // Función para iniciar sesión
   const handleLogin = (data, navigation) => {
     setUserData(data);
     setIsLoggedIn(true);
-    navigation.replace("Tabs"); // <-- Elimina los parámetros extra
+    // guardar en AsyncStorage
+    (async () => {
+      try {
+        const AsyncStorage = await import('@react-native-async-storage/async-storage');
+        await AsyncStorage.default.setItem('userData', JSON.stringify(data));
+      } catch (e) {}
+    })();
+    navigation.replace("Tabs");
   };
 
   // Función para cerrar sesión
   const handleLogout = (navigation) => {
     setUserData({});
     setIsLoggedIn(false);
+    (async () => {
+      try {
+        const AsyncStorage = await import('@react-native-async-storage/async-storage');
+        await AsyncStorage.default.removeItem('userData');
+      } catch (e) {}
+    })();
     navigation.replace("Login");
   };
 
@@ -95,7 +127,13 @@ export default function App() {
   const handleRegister = (data, navigation) => {
     setUserData(data);
     setIsLoggedIn(true);
-    navigation.replace("Tabs"); // <-- Elimina los parámetros extra
+    (async () => {
+      try {
+        const AsyncStorage = await import('@react-native-async-storage/async-storage');
+        await AsyncStorage.default.setItem('userData', JSON.stringify(data));
+      } catch (e) {}
+    })();
+    navigation.replace("Tabs");
   };
 
   return (
@@ -123,7 +161,15 @@ export default function App() {
             />
           )}
         />
-        <Stack.Screen name="Publicacion" component={Publicacion} options={{headerShown: true}}/>
+        <Stack.Screen name="Publicacion">
+          {({ navigation, route }) => (
+            <Publicacion
+              route={route}
+              navigation={navigation}
+              userData={userData}
+            />
+          )}
+        </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,0 +1,31 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: infobarrioDBROOT
+      MYSQL_DATABASE: infobarriodb
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./infobarriodb.sql:/docker-entrypoint-initdb.d/infobarriodb.sql:ro
+
+  backend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: nodejs_backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: "production"
+      SECRETO_JWT: "d486e2f094247c0d0c118a178bdf74cdac192eeb34023b318f029a7f058a6011"
+      DB_HOST: "mysql"
+      DB_NAME: "infobarriodb"
+      DB_PASSWORD: "infobarrioDBROOT"
+    depends_on:
+      - mysql
+
+volumes:
+  mysql_data:

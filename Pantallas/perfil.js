@@ -1,37 +1,135 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
+import API_URL from "../config/api";
 
-export default function Perfil() {
+export default function Perfil({ userData, route }) {
+  const viewingUserId = route?.params?.userId || null;
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    // If viewing a different user's profile, fetch public profile
+    if (viewingUserId) {
+      fetch(`${API_URL}/api/usuarios/${viewingUserId}`)
+        .then((res) => res.json())
+        .then((data) => setUser(data.user))
+        .catch((err) => {
+          console.error(err);
+          setUser(null);
+        })
+        .finally(() => setLoading(false));
+      // check follow status if logged
+      if (userData?.token) {
+        fetch(`${API_URL}/api/follows/followers/${viewingUserId}`)
+          .then((r) => r.json())
+          .then((rows) => {
+            if (Array.isArray(rows)) {
+              const found = rows.find((f) => Number(f.follower_id) === Number(userData.id));
+              setIsFollowing(!!found);
+            }
+          })
+          .catch(() => {});
+      }
+      return;
+    }
+
+    // otherwise, show current user (requires auth)
+    if (!userData?.token) {
+      setLoading(false);
+      return;
+    }
+    fetch(`${API_URL}/api/me`, {
+      headers: { Authorization: `Bearer ${userData.token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => setUser(data.user))
+      .catch((err) => {
+        console.error(err);
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
+  }, [userData, viewingUserId]);
+
+  const toggleFollow = async () => {
+    if (!userData || !userData.token) {
+      Alert.alert('Necesitas iniciar sesión', 'Iniciá sesión para seguir usuarios');
+      return;
+    }
+    if (!user || !user.id) return;
+    setFollowLoading(true);
+    const prev = isFollowing;
+    setIsFollowing(!prev); // optimistic
+    try {
+      if (!prev) {
+        const res = await fetch(`${API_URL}/api/follows`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userData.token}` },
+          body: JSON.stringify({ followed_id: user.id }),
+        });
+        if (!res.ok) {
+          setIsFollowing(prev);
+          Alert.alert('Error', 'No se pudo seguir al usuario');
+        }
+      } else {
+        const res = await fetch(`${API_URL}/api/follows/${user.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${userData.token}` },
+        });
+        if (!res.ok) {
+          setIsFollowing(prev);
+          Alert.alert('Error', 'No se pudo dejar de seguir al usuario');
+        }
+      }
+    } catch (e) {
+      setIsFollowing(prev);
+      Alert.alert('Error', 'No se pudo actualizar seguimiento');
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ padding: 20 }}>No hay información de usuario. Iniciá sesión.</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.headerCard}>
         <Image
-          source={{ uri: "https://randomuser.me/api/portraits/women/44.jpg" }}
+          source={{ uri: user.profile_photo || "https://randomuser.me/api/portraits/women/44.jpg" }}
           style={styles.avatar}
         />
         <View style={styles.headerText}>
-          <Text style={styles.name}>Patricio Baute</Text>
-          <Text style={styles.description}>
-            Startup dedicada a desarrollar herramientas de inteligencia
-            artificial enfocadas en mejorar la productividad y creatividad de
-            los programadores.
-          </Text>
+          <Text style={styles.name}>{user.name}</Text>
+          <Text style={styles.description}>{user.bio || "Sin biografía"}</Text>
         </View>
+        {viewingUserId && userData?.id !== user.id ? (
+          <TouchableOpacity style={[styles.followBtn, isFollowing ? styles.following : null]} onPress={toggleFollow} disabled={followLoading}>
+            <Text style={{ color: isFollowing ? '#fff' : '#2979FF', fontWeight: 'bold' }}>{isFollowing ? 'Siguiendo' : 'Seguir'}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <View style={styles.itemList}>
+        {/* Aquí podrías listar publicaciones del usuario o acciones */}
         {[1, 2, 3].map((i) => (
           <TouchableOpacity key={i} style={styles.itemCard}>
             <View style={styles.itemIconBox}>
               <FontAwesome name="shapes" size={32} color="#888" />
             </View>
             <View style={styles.itemContent}>
-              <Text style={styles.itemTitle}>Title</Text>
-              <Text style={styles.itemDescription}>
-                Descripción duis aute irure dolor in reprehenderit in voluptate
-                velit.
-              </Text>
+              <Text style={styles.itemTitle}>Ejemplo</Text>
+              <Text style={styles.itemDescription}>Publicación de ejemplo.</Text>
               <Text style={styles.itemTime}>Hoy · 23 min</Text>
             </View>
             <Ionicons name="chevron-forward" size={22} color="#aaa" />
@@ -124,5 +222,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 8,
+  },
+  followBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2979FF',
+    backgroundColor: '#fff',
+  },
+  following: {
+    backgroundColor: '#2979FF',
+    borderColor: '#2979FF',
   },
 });

@@ -7,10 +7,67 @@ import {
   StyleSheet,
   Image,
 } from "react-native";
+import { API_URL } from "../config/api";
 
 export default function Login({ onLogin, navigation }) {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleLogin = async () => {
+    if (!username || !password) {
+      setError("Por favor completá todos los campos");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    
+    try {
+      console.log('URL de la API:', API_URL);
+  console.log('Intentando login con username:', username);
+      
+      const response = await fetch(`${API_URL}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username,
+          password
+        })
+      });
+      
+      const data = await response.json();
+      console.log('Status:', response.status);
+      console.log('Respuesta del servidor:', data);
+      
+      if (response.ok && data.user) {
+        onLogin({ ...data.user, token: data.token }, navigation);
+      } else {
+        setError(data.message || "Credenciales incorrectas");
+      }
+    } catch (e) {
+      console.log('Error completo:', e);
+      if (e.response) {
+        // El servidor respondió con un status code fuera del rango 2xx
+        console.log('Datos del error:', e.response.data);
+        console.log('Status del error:', e.response.status);
+        setError(e.response.data.message || "Error en la autenticación");
+      } else if (e.request) {
+        // La petición fue hecha pero no se recibió respuesta
+        console.log('Error de conexión - no hay respuesta');
+        setError("No se pudo conectar con el servidor");
+      } else {
+        // Algo falló al configurar la petición
+        console.log('Error de configuración:', e.message);
+        setError("Error al procesar la solicitud");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -19,9 +76,9 @@ export default function Login({ onLogin, navigation }) {
       <Text style={styles.subtitle}>Inicio de sesion</Text>
       <TextInput
         style={styles.input}
-        placeholder="Correo"
-        value={email}
-        onChangeText={setEmail}
+        placeholder="Usuario"
+        value={username}
+        onChangeText={setUsername}
         autoCapitalize="none"
       />
       <TextInput
@@ -31,20 +88,16 @@ export default function Login({ onLogin, navigation }) {
         onChangeText={setPassword}
         secureTextEntry
       />
+      {error ? <Text style={{ color: 'red', marginBottom: 8 }}>{error}</Text> : null}
       <TouchableOpacity style={styles.link}>
         <Text style={styles.linkText}>Olvidé mi contraseña</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.button}
-        onPress={() => {
-          if (email && password) {
-            onLogin({ email, password }, navigation);
-          } else {
-            alert("Por favor completá todos los campos");
-          }
-        }}
+        onPress={handleLogin}
+        disabled={loading}
       >
-        <Text style={styles.buttonText}>Iniciar sesion</Text>
+        <Text style={styles.buttonText}>{loading ? 'Cargando...' : 'Iniciar sesion'}</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.link}
