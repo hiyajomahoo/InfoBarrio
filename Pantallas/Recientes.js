@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { View, Text, TextInput, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert, RefreshControl } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import axios from "axios";
 import API_URL from "../config/api";
 import Publicacion from "../components/botonPublicacion.js";
+import { useFocusEffect } from '@react-navigation/native';
 
 
 function AnuncioItem({ item }) {
@@ -43,60 +44,56 @@ export default function Recientes({ userData, navigation }) {
   const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [refreshing, setRefreshing] = useState(false);
   
-    useEffect(() => {
-      const fetchNewest = async () => {
-        setLoading(true);
-        setError("");
-        try {
-          const res = await axios.get(`${API_URL}/api/post/getNewestPost`);
-          // The backend may return an array directly or an object with a posts field.
-          const data = res && res.data ? res.data : [];
-          if (Array.isArray(data)) {
-            setPosts(data);
-          } else if (data.posts && Array.isArray(data.posts)) {
-            setPosts(data.posts);
-          } else {
-            // If it's a single object, wrap it
-            setPosts(data ? [data] : []);
-          }
-        } catch (err) {
-          console.log("Error fetching newest posts", err.message || err);
-          setError("No se pudieron cargar las publicaciones recientes");
-          setPosts([]);
-        } finally {
-          setLoading(false);
-        }
-      };
-  
+    const fetchNewest = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await axios.get(`${API_URL}/api/post/getNewestPost`);
+        const data = res && res.data ? res.data : [];
+        let arr = [];
+        if (Array.isArray(data)) arr = data;
+        else if (data.posts && Array.isArray(data.posts)) arr = data.posts;
+        else if (data.rows && Array.isArray(data.rows)) arr = data.rows;
+        else if (data) arr = [data];
+
+        const normalized = arr.map((item) => ({
+          id: item.id ?? item.post_id ?? Math.random().toString(),
+          title: item.title ?? item.titulo ?? 'Sin título',
+          description: item.description ?? item.descripcion ?? item.body ?? '',
+          time: item.createdAt ?? item.created_at ?? item.fecha ?? '',
+          raw: item,
+          image: (item.photos && item.photos[0]) || item.image || null,
+        }));
+
+        setPosts(normalized);
+      } catch (err) {
+        console.log("Error fetching newest posts", err.message || err);
+        setError("No se pudieron cargar las publicaciones recientes");
+        setPosts([]);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    };
+
+    useFocusEffect(
+      useCallback(() => {
+        fetchNewest();
+      }, [])
+    );
+
+    const onRefresh = () => {
+      setRefreshing(true);
       fetchNewest();
-    }, []);
+    }
   
     const renderItem = ({ item }) => {
-      // Normalize item fields expected by Publicacion component
-      const normalized = {
-        id: item.id ?? item.post_id ?? item._id ?? Math.random().toString(),
-        title: item.title ?? item.titulo ?? "Sin título",
-        description: item.description ?? item.descripcion ?? item.body ?? "",
-        // Try to show a readable time (backend may provide createdAt/fecha)
-        time: (() => {
-          const dateStr = item.createdAt ?? item.created_at ?? item.fecha ?? item.date;
-          if (dateStr) {
-            try {
-              const d = new Date(dateStr);
-              return d.toLocaleDateString();
-            } catch (e) {
-              return String(dateStr).slice(0, 16);
-            }
-          }
-          return item.time ?? "";
-        })(),
-      };
-  
       return (
         <Publicacion
-          item={normalized}
-          onPress={() => navigation.navigate("Publicacion", { post: item })}
+          item={{ title: item.title, description: item.description, time: item.time, image: item.image }}
+          onPress={() => navigation.navigate("Publicacion", { publication: item.raw ?? item })}
         />
       );
     };
@@ -121,6 +118,8 @@ export default function Recientes({ userData, navigation }) {
                 data={posts}
                 keyExtractor={(item, index) => String(item.id ?? item._id ?? index)}
                 renderItem={renderItem}
+                refreshing={refreshing}
+                onRefresh={onRefresh}
                 ListEmptyComponent={<Text style={{ alignSelf: "center", marginTop: 16 }}>No hay publicaciones</Text>}
               />
             )}

@@ -61,10 +61,10 @@ export default function NuevaPublicacion({ navigation, userData }) {
       Alert.alert("Campo requerido", "El título es obligatorio");
       return;
     }
-    if (!selectedLocation) {
+    /* if (!selectedLocation) {
       Alert.alert("Ubicación requerida", "Debes seleccionar la ubicación desde el mapa");
       return;
-    }
+    } */
     if (!userData || !userData.token) {
       Alert.alert("Necesitas iniciar sesión", "Iniciá sesión para crear una publicación");
       navigation.navigate("Login");

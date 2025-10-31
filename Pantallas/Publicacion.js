@@ -24,18 +24,29 @@ const PublicationScreen = ({ route, navigation, userData }) => {
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState("");
   const [ratingLoading, setRatingLoading] = useState(false);
-  // Support passing a `publication` object or a `postId` param.
-  const [publication, setPublication] = useState(route?.params?.publication ?? null);
-  const [loadingPublication, setLoadingPublication] = useState(!route?.params?.publication && !!(route?.params?.postId || route?.params?.id));
+  const [publication, setPublication] = useState(
+    route?.params?.publication ?? route?.params?.post ?? null
+  );
+  const [loadingPublication, setLoadingPublication] = useState(
+    !route?.params?.publication && !!(route?.params?.postId || route?.params?.id || route?.params?.post)
+  );
+  
+  const getField = (obj, ...keys) => {
+    if (!obj) return undefined;
+    for (const k of keys) {
+      if (obj[k] !== undefined && obj[k] !== null) return obj[k];
+    }
+    return undefined;
+  };
 
-  // When publication changes (or is provided later), set map center if it has a location.
   useEffect(() => {
     (async () => {
       // Si la publicación trae una ubicación (seleccionada en NuevaPublicacion), usarla
-      if (publication && publication.location) {
+      const pubLocation = getField(publication, 'location', 'ubicacion_obj', 'coords');
+      if (publication && pubLocation && pubLocation.latitude && pubLocation.longitude) {
         setLocation({
-          latitude: publication.location.latitude,
-          longitude: publication.location.longitude,
+          latitude: pubLocation.latitude,
+          longitude: pubLocation.longitude,
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         });
@@ -63,11 +74,10 @@ const PublicationScreen = ({ route, navigation, userData }) => {
     })();
   }, [publication]);
 
-  // If a postId was provided, fetch the publication from the backend
   useEffect(() => {
-    const postId = route?.params?.postId ?? route?.params?.id;
+  const postId = route?.params?.postId ?? route?.params?.id ?? route?.params?.postId;
     if (!postId) return;
-    // If we already have a publication object, skip fetching
+    // Si ya tenemos un objeto publication, evitar refetch
     if (publication) return;
 
     let mounted = true;
@@ -76,9 +86,11 @@ const PublicationScreen = ({ route, navigation, userData }) => {
       try {
         const res = await fetch(`${API_URL}/api/post/${postId}`);
         if (!res.ok) throw new Error('Network response not ok');
-        const data = await res.json();
-        // backend returns object (controller returns respuesta[0])
-        if (mounted) setPublication(data);
+  const data = await res.json();
+  // el backend puede devolver arreglo u objeto; normalizar a un solo objeto
+  let pub = data;
+  if (Array.isArray(data) && data.length) pub = data[0];
+  if (mounted) setPublication(pub);
       } catch (e) {
         console.error('Error cargando publicación por id', e);
         Alert.alert('Error', 'No se pudo cargar la publicación');
@@ -93,18 +105,19 @@ const PublicationScreen = ({ route, navigation, userData }) => {
   useEffect(() => {
     // comprobar si está en favoritos
     (async () => {
-      if (!userData || !userData.token || !publication?.id) return;
+  if (!userData || !userData.token || !getField(publication, 'id', 'post_id')) return;
       try {
         const res = await fetch(`${API_URL}/api/favorites`, {
           headers: { Authorization: `Bearer ${userData.token}` }
         });
         const data = await res.json();
         if (Array.isArray(data)) {
-          const found = data.find((r) => Number(r.post_id) === Number(publication.id));
+          const pId = Number(getField(publication, 'id', 'post_id'))
+          const found = data.find((r) => Number(r.post_id) === pId);
           setFavorited(!!found);
         }
       } catch (e) {
-        // ignore
+        // ignorar errores de esta comprobación
       }
     })();
   }, [userData, publication]);
@@ -112,42 +125,42 @@ const PublicationScreen = ({ route, navigation, userData }) => {
   useEffect(() => {
     // comprobar si seguimos al autor
     (async () => {
-      if (!userData || !userData.token || !publication.user_id) return;
+      if (!userData || !userData.token || !getField(publication, 'user_id', 'userId', 'author_id')) return;
       try {
-  const res = await fetch(`${API_URL}/api/follows/followers/${publication.user_id}`);
+  const targetId = getField(publication, 'user_id', 'userId', 'author_id')
+  const res = await fetch(`${API_URL}/api/follows/followers/${targetId}`);
         const data = await res.json();
         if (Array.isArray(data)) {
           const found = data.find((f) => Number(f.follower_id) === Number(userData.id));
           setIsFollowing(!!found);
         }
       } catch (e) {
-        // ignore
+        // ignorar errores de esta comprobación
       }
     })();
   }, [userData, publication]);
 
   const toggleFavorite = async () => {
-    if (!userData || !userData.token) {
+      if (!userData || !userData.token) {
       Alert.alert('Necesitas iniciar sesión', 'Iniciá sesión para guardar favoritos');
       return;
     }
     setFavLoading(true);
     const previous = favorited;
-    // optimistic
-    setFavorited(!previous);
+  setFavorited(!previous);
     try {
       if (!previous) {
         const res = await fetch(`${API_URL}/api/favorites`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userData.token}` },
-          body: JSON.stringify({ post_id: publication.id })
+    body: JSON.stringify({ post_id: getField(publication, 'id', 'post_id') })
         });
         if (!res.ok) {
           setFavorited(previous);
           Alert.alert('Error', 'No se pudo guardar en favoritos');
         }
       } else {
-        const res = await fetch(`${API_URL}/api/favorites/${publication.id}`, {
+        const res = await fetch(`${API_URL}/api/favorites/${getField(publication, 'id', 'post_id')}`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${userData.token}` }
         });
@@ -169,23 +182,24 @@ const PublicationScreen = ({ route, navigation, userData }) => {
       Alert.alert('Necesitas iniciar sesión', 'Iniciá sesión para seguir usuarios');
       return;
     }
-    if (!publication.user_id) return;
+    const targetId = getField(publication, 'user_id', 'userId', 'author_id')
+    if (!targetId) return;
     setFollowLoading(true);
     const prev = isFollowing;
-    setIsFollowing(!prev); // optimistic
+  setIsFollowing(!prev);
     try {
       if (!prev) {
         const res = await fetch(`${API_URL}/api/follows`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userData.token}` },
-          body: JSON.stringify({ followed_id: publication.user_id })
+          body: JSON.stringify({ followed_id: targetId })
         });
         if (!res.ok) {
           setIsFollowing(prev);
           Alert.alert('Error', 'No se pudo seguir al usuario');
         }
       } else {
-        const res = await fetch(`${API_URL}/api/follows/${publication.user_id}`, {
+        const res = await fetch(`${API_URL}/api/follows/${targetId}`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${userData.token}` }
         });
@@ -207,7 +221,7 @@ const PublicationScreen = ({ route, navigation, userData }) => {
       Alert.alert('Necesitas iniciar sesión', 'Iniciá sesión para enviar una calificación');
       return;
     }
-    if (!publication.user_id) {
+    if (!getField(publication, 'user_id', 'userId', 'author_id')) {
       Alert.alert('Error', 'Publicación sin autor');
       return;
     }
@@ -220,7 +234,7 @@ const PublicationScreen = ({ route, navigation, userData }) => {
   const res = await fetch(`${API_URL}/api/ratings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userData.token}` },
-        body: JSON.stringify({ rated_id: publication.user_id, stars, comment })
+        body: JSON.stringify({ rated_id: getField(publication, 'user_id', 'userId', 'author_id'), stars, comment })
       });
       if (res.ok) {
         Alert.alert('Listo', 'Gracias por tu calificación');
@@ -240,17 +254,24 @@ const PublicationScreen = ({ route, navigation, userData }) => {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Image
-          source={
-            publication.photos && publication.photos.length > 0
-              ? { uri: publication.photos[0] }
-              : require("../assets/splash-icon.png")
-          }
-          style={styles.image}
-        />
+        {(() => {
+          const pub = publication || {};
+          return (
+            <>
+              <Image
+                source={
+                  pub.photos && pub.photos.length > 0
+                    ? { uri: pub.photos[0] }
+                    : require("../assets/splash-icon.png")
+                }
+                style={styles.image}
+              />
 
-        <Text style={styles.title}>{publication.titulo || "Titulo de Publicacion"}</Text>
-        <Text style={styles.price}>{publication.precio ? `$${publication.precio}` : ""}</Text>
+              <Text style={styles.title}>{getField(pub, 'title', 'titulo') || "Titulo de Publicacion"}</Text>
+              <Text style={styles.price}>{getField(pub, 'price', 'precio') ? `$${getField(pub, 'price', 'precio')}` : ""}</Text>
+            </>
+          )
+        })()}
 
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity style={styles.button}>
@@ -264,13 +285,20 @@ const PublicationScreen = ({ route, navigation, userData }) => {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.description}>{publication.descripcion || ""}</Text>
+        {(() => {
+          const pub = publication || {};
+          return (
+            <>
+              <Text style={styles.description}>{getField(pub, 'description', 'descripcion') || ""}</Text>
 
-        {publication.ubicacion ? (
-          <Text style={{ color: "#666", marginBottom: 8 }}>
-            Ubicación: {publication.ubicacion}
-          </Text>
-        ) : null}
+              {getField(pub, 'ubicacion') ? (
+                <Text style={{ color: "#666", marginBottom: 8 }}>
+                  Ubicación: {getField(pub, 'ubicacion')}
+                </Text>
+              ) : null}
+            </>
+          )
+        })()}
 
         {/* Mapa */}
         <View style={styles.mapPlaceholder}>
@@ -282,12 +310,12 @@ const PublicationScreen = ({ route, navigation, userData }) => {
               >
                 <Marker
                   coordinate={
-                    publication && publication.location
-                      ? { latitude: publication.location.latitude, longitude: publication.location.longitude }
-                      : { latitude: -34.66, longitude: -58.365 }
-                  }
-                  title={publication.titulo || "Ubicación"}
-                  description={publication.ubicacion || ""}
+                      (publication && publication.location)
+                        ? { latitude: publication.location.latitude, longitude: publication.location.longitude }
+                        : { latitude: -34.66, longitude: -58.365 }
+                    }
+                    title={getField(publication, 'title', 'titulo') || "Ubicación"}
+                    description={getField(publication, 'ubicacion') || ""}
                 />
               </MapView>
           ) : (

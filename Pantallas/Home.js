@@ -39,7 +39,7 @@ export default function Home({ navigation }) {
           else if (Array.isArray(data.posts)) arr = data.posts;
           else if (data.rows && Array.isArray(data.rows)) arr = data.rows;
           if (arr.length) {
-            // normalize minimal fields
+            
             const norm = arr.map((p) => ({
               id: p.id ?? p.post_id ?? Math.random().toString(),
               title: p.title ?? p.titulo ?? "Sin título",
@@ -52,9 +52,8 @@ export default function Home({ navigation }) {
             got = true;
             break;
           }
-        } catch (e) {
-          // try next endpoint
-        }
+          } catch (e) {
+          }
       }
       if (!got) {
         setPosts([]);
@@ -68,7 +67,6 @@ export default function Home({ navigation }) {
   return unsubscribe
   }, []);
 
-  // filter posts when search changes
   useEffect(() => {
     if (!search) {
       setFilteredPosts(posts);
@@ -111,8 +109,8 @@ export default function Home({ navigation }) {
             keyExtractor={(item) => String(item.id)}
             renderItem={({ item }) => (
               <Publicacion
-                item={{ title: item.title, description: item.description, time: item.time }}
-                onPress={() => navigation.navigate("Publicacion", { post: item.raw })}
+                item={{ title: item.title, description: item.description, time: item.time, image: item.image }}
+                onPress={() => navigation.navigate("Publicacion", { publication: item.raw })}
               />
             )}
             ListEmptyComponent={<Text style={{ alignSelf: 'center', marginTop: 20 }}>No hay publicaciones</Text>}

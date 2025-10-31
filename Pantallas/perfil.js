@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert, FlatList } from "react-native";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import API_URL from "../config/api";
-import { FlatList } from "react-native-gesture-handler";
+import Publicacion from "../components/botonPublicacion";
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function Perfil({ userData, route, navigation }) {
   const viewingUserId = route?.params?.userId || null;
@@ -12,38 +13,111 @@ export default function Perfil({ userData, route, navigation }) {
   const [followLoading, setFollowLoading] = useState(false);
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetch(`${API_URL}/api/me`, {
-      headers: { Authorization: `Bearer ${userData.token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => setUser(data.user))
-      .catch((err) => {
-        console.error(err);
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
-  }, [userData, viewingUserId]);
+  const normalizePosts = (arr) => {
+    if (!Array.isArray(arr)) return [];
+    return arr.map((item) => ({
+      id: item.id ?? item.post_id ?? Math.random().toString(),
+      title: item.title ?? item.titulo ?? 'Sin título',
+      description: item.description ?? item.descripcion ?? item.body ?? '',
+      time: item.createdAt ?? item.created_at ?? item.fecha ?? '',
+      raw: item,
+      image: (item.photos && item.photos[0]) || item.image || null,
+    }));
+  }
 
-  // Cargar publicaciones del perfil (si viewingUserId está presente, mostrar las de ese usuario)
-  useEffect(() => {
-    const ownerId = viewingUserId ?? user?.id;
-    if (!ownerId) return;
+  const fetchProfileAndPosts = async () => {
+    setLoading(true);
     setPostsLoading(true);
-    fetch(`${API_URL}/api/post/user/${ownerId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setPosts(data);
-        else if (data && Array.isArray(data.posts)) setPosts(data.posts);
-        else setPosts([]);
-      })
-      .catch((err) => {
-        console.error('Error cargando posts de usuario', err);
+    try {
+      // Obtener datos de usuario: si viewingUserId existe, pedir /usuarios/:id, si no, pedir /me con token
+      let fetchedUser = null;
+      if (viewingUserId) {
+        const res = await fetch(`${API_URL}/api/usuarios/${viewingUserId}`);
+        const data = await res.json();
+        fetchedUser = data.user || data || null;
+      } else {
+        const res = await fetch(`${API_URL}/api/me`, { headers: { Authorization: `Bearer ${userData?.token}` } });
+        const data = await res.json();
+        fetchedUser = data.user || data || null;
+      }
+      setUser(fetchedUser);
+
+      // Posts del usuario (usar el id obtenido si es necesario)
+      const ownerId = viewingUserId ?? fetchedUser?.id;
+      if (ownerId) {
+        const res2 = await fetch(`${API_URL}/api/post/user/${ownerId}`);
+        const data2 = await res2.json();
+        let arr = [];
+        if (Array.isArray(data2)) arr = data2;
+        else if (data2 && Array.isArray(data2.posts)) arr = data2.posts;
+        else if (data2 && Array.isArray(data2.rows)) arr = data2.rows;
+        else if (data2) arr = [data2];
+        setPosts(normalizePosts(arr));
+      } else {
         setPosts([]);
-      })
-      .finally(() => setPostsLoading(false));
-  }, [viewingUserId, user]);
+      }
+    } catch (err) {
+      console.error('Error cargando perfil y posts', err);
+      setUser(null);
+      setPosts([]);
+    } finally {
+      setLoading(false);
+      setPostsLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfileAndPosts();
+    }, [viewingUserId, userData])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchProfileAndPosts();
+  }
+
+  const toggleFollow = async () => {
+    if (!userData || !userData.token) {
+      Alert.alert('Necesitas iniciar sesión', 'Iniciá sesión para seguir usuarios');
+      return;
+    }
+    const targetId = viewingUserId ?? user?.id;
+    if (!targetId) return;
+    setFollowLoading(true);
+    const prev = isFollowing;
+    setIsFollowing(!prev);
+    try {
+      if (!prev) {
+        const res = await fetch(`${API_URL}/api/follows`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userData.token}` },
+          body: JSON.stringify({ followed_id: targetId })
+        });
+        if (!res.ok) {
+          setIsFollowing(prev);
+          Alert.alert('Error', 'No se pudo seguir al usuario');
+        }
+      } else {
+        const res = await fetch(`${API_URL}/api/follows/${targetId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${userData.token}` }
+        });
+        if (!res.ok) {
+          setIsFollowing(prev);
+          Alert.alert('Error', 'No se pudo dejar de seguir al usuario');
+        }
+      }
+    } catch (e) {
+      setIsFollowing(prev);
+      Alert.alert('Error', 'No se pudo actualizar seguimiento');
+    } finally {
+      setFollowLoading(false);
+    }
+  }
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
 
@@ -74,20 +148,22 @@ export default function Perfil({ userData, route, navigation }) {
       </View>
 
       <View style={styles.itemList}>
-        {loading ? (
+        {postsLoading ? (
           <ActivityIndicator size="large" color="#2979FF" style={{ marginTop: 20 }} />
-            ) : (
-              <FlatList
-                data={filteredPosts}
-                keyExtractor={(item) => String(item.id)}
-                renderItem={({ item }) => (
-                <Publicacion
-                  item={{ title: item.title, description: item.description, time: item.time }}
-                  onPress={() => navigation.navigate("Publicacion", { post: item.raw })}
-                />
-              )}
-                ListEmptyComponent={<Text style={{ alignSelf: 'center', marginTop: 20 }}>No hay publicaciones</Text>}
+        ) : (
+            <FlatList
+            data={posts}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={({ item }) => (
+              <Publicacion
+                item={item}
+                onPress={() => navigation.navigate("Publicacion", { postId: item.id })}
               />
+            )}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            ListEmptyComponent={<Text style={{ alignSelf: 'center', marginTop: 20 }}>No hay publicaciones</Text>}
+          />
         )}
       </View>
     </View>

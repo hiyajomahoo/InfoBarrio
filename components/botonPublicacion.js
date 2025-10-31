@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import { FontAwesome } from "@expo/vector-icons";
 
 
@@ -6,7 +6,11 @@ function Publicacion({ item, onPress }) {
   return (
     <TouchableOpacity onPress={onPress} style={styles.feedItem}>
       <View style={styles.feedImagePlaceholder}>
-        <FontAwesome name="picture-o" size={40} color="#aaa" />
+        {item.image ? (
+          <Image source={{ uri: item.image }} style={styles.feedImage} />
+        ) : (
+          <FontAwesome name="picture-o" size={40} color="#aaa" />
+        )}
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.feedTitle}>{item.title}</Text>
@@ -40,6 +44,11 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         marginRight: 12,
+    },
+    feedImage: {
+      width: 50,
+      height: 50,
+      borderRadius: 8,
     },
     feedTitle: { fontWeight: "bold", fontSize: 16 },
     feedDesc: { color: "#555", fontSize: 13, marginVertical: 2 },
