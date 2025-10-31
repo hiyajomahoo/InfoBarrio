@@ -1,57 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
+import axios from "axios";
 import API_URL from "../config/api";
+import Publicacion from "../components/botonPublicacion.js";
 
-const anunciosMock = [
-  {
-    id: "1",
-    title: "Mesa de comedor 6 puestos en buen estado",
-    price: "$45.000",
-    location: "San Vte. Florito",
-  },
-  {
-    id: "2",
-    title: "Vendo PS4 + 2 joysticks + 5 juegos",
-    price: "$250.000",
-    location: "San Vte. Florito",
-  },
-  {
-    id: "3",
-    title: "Curso de repostería básica en centro cultural",
-    price: "$20.000 por cupo",
-    location: "San Vte. Florito",
-  },
-];
 
-const trabajosMock = [
-  {
-    id: "1",
-    title: "Creación de páginas web...",
-    color: "#8D5EFF",
-    desc: "Solicita tu página web hoy mismo.",
-  },
-  {
-    id: "2",
-    title: "Creación de páginas web...",
-    color: "#2DCDA7",
-    desc: "Solicita tu página web hoy mismo.",
-  },
-  {
-    id: "3",
-    title: "Creación de páginas web...",
-    color: "#B97A56",
-    desc: "Solicita tu página web hoy mismo.",
-  },
-  {
-    id: "4",
-    title: "Creación de páginas web...",
-    color: "#4A90E2",
-    desc: "Solicita tu página web hoy mismo.",
-  },
-];
-
-function AnuncioItem({ item, favorited, onToggleFavorite }) {
+function AnuncioItem({ item }) {
   return (
     <View style={styles.anuncioItem}>
       <FontAwesome
@@ -63,14 +18,11 @@ function AnuncioItem({ item, favorited, onToggleFavorite }) {
       <Text style={styles.anuncioTitle}>{item.title}</Text>
       <Text style={styles.anuncioPrice}>{item.price}</Text>
       <Text style={styles.anuncioLoc}>{item.location}</Text>
-      <TouchableOpacity style={styles.heartBtn} onPress={() => onToggleFavorite(item.id)}>
-        <FontAwesome name={favorited ? 'heart' : 'heart-o'} size={18} color={favorited ? '#e74c3c' : '#777'} />
-      </TouchableOpacity>
     </View>
   );
 }
 
-function TrabajoItem({ item, favorited, onToggleFavorite }) {
+function TrabajoItem({ item }) {
   return (
     <View style={[styles.trabajoItem, { borderLeftColor: item.color }]}>
       <FontAwesome
@@ -83,89 +35,71 @@ function TrabajoItem({ item, favorited, onToggleFavorite }) {
         <Text style={styles.trabajoTitle}>{item.title}</Text>
         <Text style={styles.trabajoDesc}>{item.desc}</Text>
       </View>
-      <TouchableOpacity style={{ marginLeft: 8 }} onPress={() => onToggleFavorite(item.id)}>
-        <FontAwesome name={favorited ? 'heart' : 'heart-o'} size={18} color={favorited ? '#e74c3c' : '#777'} />
-      </TouchableOpacity>
     </View>
   );
 }
 
-export default function Recientes({ userData }) {
-  const [anuncios, setAnuncios] = useState([]);
-  const [trabajos, setTrabajos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [favorites, setFavorites] = useState(new Set());
-  const [favLoading, setFavLoading] = useState(false);
-
-  useEffect(() => {
-  fetch(`${API_URL}/api/post`)
-      .then((res) => res.json())
-      .then((data) => {
-        setAnuncios(data.filter((p) => p.post_type_id === 1));
-        setTrabajos(data.filter((p) => p.post_type_id === 4 || p.post_type_id === 5));
-        // after loading posts, if user logged in, load favorites
-        if (userData && userData.token) {
-          fetch(`${API_URL}/api/favorites`, {
-            headers: { Authorization: `Bearer ${userData.token}` },
-          })
-            .then((r) => r.json())
-            .then((favData) => {
-              if (Array.isArray(favData)) {
-                const set = new Set(favData.map((f) => Number(f.post_id)));
-                setFavorites(set);
-              }
-            })
-            .catch(() => {});
+export default function Recientes({ userData, navigation }) {
+  const [posts, setPosts] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+  
+    useEffect(() => {
+      const fetchNewest = async () => {
+        setLoading(true);
+        setError("");
+        try {
+          const res = await axios.get(`${API_URL}/api/post/getNewestPost`);
+          // The backend may return an array directly or an object with a posts field.
+          const data = res && res.data ? res.data : [];
+          if (Array.isArray(data)) {
+            setPosts(data);
+          } else if (data.posts && Array.isArray(data.posts)) {
+            setPosts(data.posts);
+          } else {
+            // If it's a single object, wrap it
+            setPosts(data ? [data] : []);
+          }
+        } catch (err) {
+          console.log("Error fetching newest posts", err.message || err);
+          setError("No se pudieron cargar las publicaciones recientes");
+          setPosts([]);
+        } finally {
+          setLoading(false);
         }
-      })
-      .catch(() => {
-        setAnuncios([]);
-        setTrabajos([]);
-      })
-      .finally(() => setLoading(false));
-  }, [userData]);
-
-  const toggleFavorite = async (postId) => {
-    if (!userData || !userData.token) {
-      Alert.alert("Necesitas iniciar sesión", "Iniciá sesión para guardar favoritos");
-      return;
-    }
-    if (favLoading) return;
-    setFavLoading(true);
-    const isFav = favorites.has(Number(postId));
-    // optimistic update
-    const previous = new Set(favorites);
-    const next = new Set(favorites);
-    if (!isFav) next.add(Number(postId)); else next.delete(Number(postId));
-    setFavorites(next);
-    try {
-      if (!isFav) {
-        const res = await fetch(`${API_URL}/api/favorites`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${userData.token}` },
-          body: JSON.stringify({ post_id: postId }),
-        });
-        if (!res.ok) {
-          setFavorites(previous);
-          Alert.alert("Error", "No se pudo guardar en favoritos");
-        }
-      } else {
-        const res = await fetch(`${API_URL}/api/favorites/${postId}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${userData.token}` },
-        });
-        if (!res.ok) {
-          setFavorites(previous);
-          Alert.alert("Error", "No se pudo quitar de favoritos");
-        }
-      }
-    } catch (e) {
-      setFavorites(previous);
-      Alert.alert("Error", "No se pudo actualizar favorito");
-    } finally {
-      setFavLoading(false);
-    }
-  };
+      };
+  
+      fetchNewest();
+    }, []);
+  
+    const renderItem = ({ item }) => {
+      // Normalize item fields expected by Publicacion component
+      const normalized = {
+        id: item.id ?? item.post_id ?? item._id ?? Math.random().toString(),
+        title: item.title ?? item.titulo ?? "Sin título",
+        description: item.description ?? item.descripcion ?? item.body ?? "",
+        // Try to show a readable time (backend may provide createdAt/fecha)
+        time: (() => {
+          const dateStr = item.createdAt ?? item.created_at ?? item.fecha ?? item.date;
+          if (dateStr) {
+            try {
+              const d = new Date(dateStr);
+              return d.toLocaleDateString();
+            } catch (e) {
+              return String(dateStr).slice(0, 16);
+            }
+          }
+          return item.time ?? "";
+        })(),
+      };
+  
+      return (
+        <Publicacion
+          item={normalized}
+          onPress={() => navigation.navigate("Publicacion", { post: item })}
+        />
+      );
+    };
 
   return (
     <View style={styles.container}>
@@ -177,31 +111,23 @@ export default function Recientes({ userData }) {
       <View style={styles.columns}>
         <View style={styles.column}>
           <Text style={styles.columnHeader}>Anuncios Recientes</Text>
-          {loading ? (
-            <ActivityIndicator />
-          ) : (
-            <FlatList
-              data={anuncios}
-              renderItem={({ item }) => (
-                <AnuncioItem item={item} favorited={favorites.has(Number(item.id))} onToggleFavorite={toggleFavorite} />
-              )}
-              keyExtractor={(item) => String(item.id)}
-            />
-          )}
+          <View>
+            {loading ? (
+              <ActivityIndicator size="large" color="#2979FF" style={{ marginTop: 20 }} />
+            ) : error ? (
+              <Text style={{ color: "red", alignSelf: "center", marginTop: 16 }}>{error}</Text>
+            ) : (
+              <FlatList
+                data={posts}
+                keyExtractor={(item, index) => String(item.id ?? item._id ?? index)}
+                renderItem={renderItem}
+                ListEmptyComponent={<Text style={{ alignSelf: "center", marginTop: 16 }}>No hay publicaciones</Text>}
+              />
+            )}
+          </View>
         </View>
         <View style={styles.column}>
           <Text style={styles.columnHeader}>Trabajos Recientes</Text>
-          {loading ? (
-            <ActivityIndicator />
-          ) : (
-            <FlatList
-              data={trabajos}
-              renderItem={({ item }) => (
-                <TrabajoItem item={item} favorited={favorites.has(Number(item.id))} onToggleFavorite={toggleFavorite} />
-              )}
-              keyExtractor={(item) => String(item.id)}
-            />
-          )}
         </View>
       </View>
     </View>

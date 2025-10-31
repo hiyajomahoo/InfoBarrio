@@ -1,10 +1,12 @@
 import { Router } from "express"
-import { createPost, deletePost, editPost, getPosts, getPostsByType, getPost } from "../controllers/post.controller.js"
+import { createPost, deletePost, editPost, getPosts, getPostsByType, getPost, getNewestPost, getPostsByUser } from "../controllers/post.controller.js"
 import { verifyToken } from '../middleware/auth.js'
 import { validatePost } from '../middleware/validate.js'
 
 const router = Router()
 
+router.get('/post/getNewestPost', getNewestPost)
+router.get('/post/user/:id', getPostsByUser)
 router.get('/post/type/:id', getPostsByType)
 router.get('/post/:id', getPost)
 router.get('/post', getPosts)

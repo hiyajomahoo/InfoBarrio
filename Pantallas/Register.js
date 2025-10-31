@@ -14,7 +14,7 @@ import API_URL from "../config/api";
 // Notas importantes:
 // - El backend espera username en lugar de email para el login automático.
 // - Tras el registro intentamos hacer login automáticamente usando { username, password }.
-export default function Register({ navigation, onLogin }) {
+export default function Register({ navigation, onRegister }) {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");

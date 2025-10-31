@@ -75,6 +75,7 @@ export const createUser = async (req, res) => {
     const rondasSalt = 12
 
     if (!username || !password) {
+        console.log("Faltan cosas!")
        return res.status(400).send("Parametros insuficientes.")
     }
 
@@ -85,6 +86,7 @@ export const createUser = async (req, res) => {
         let [respuesta] = await conexion.query(consulta, [username])
         if(respuesta.length > 0) {
             conexion.release()
+            console.log("Existe")
             return res.status(400).json({message: "El usuario ya existe."})
         }
 

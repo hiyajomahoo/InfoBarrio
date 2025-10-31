@@ -13,6 +13,18 @@ export const createPost = async (req, res) => {
         res.status(500).json({message:"Error al realizar la consulta."})    }
 }
 
+export const getNewestPost = async (req, res) => {
+    const consulta = 'SELECT * FROM posts WHERE NOT post_type_id = 4 ORDER BY id DESC LIMIT 5'
+    try {
+        const conexion = await db.getConnection()
+        const [respuesta] = await conexion.query(consulta)
+        conexion.release()
+        res.status(200).json(respuesta)
+    } catch (error) {
+        res.status(500).json({message:"Error al realizar la consulta."})
+    }
+}
+
 export const getPost = async (req, res) => {
     const consulta = 'SELECT * FROM posts WHERE id = ?'
     const id = req.params.id

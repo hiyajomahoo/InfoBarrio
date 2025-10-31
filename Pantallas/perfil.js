@@ -2,46 +2,18 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import API_URL from "../config/api";
+import { FlatList } from "react-native-gesture-handler";
 
-export default function Perfil({ userData, route }) {
+export default function Perfil({ userData, route, navigation }) {
   const viewingUserId = route?.params?.userId || null;
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    // If viewing a different user's profile, fetch public profile
-    if (viewingUserId) {
-      fetch(`${API_URL}/api/usuarios/${viewingUserId}`)
-        .then((res) => res.json())
-        .then((data) => setUser(data.user))
-        .catch((err) => {
-          console.error(err);
-          setUser(null);
-        })
-        .finally(() => setLoading(false));
-      // check follow status if logged
-      if (userData?.token) {
-        fetch(`${API_URL}/api/follows/followers/${viewingUserId}`)
-          .then((r) => r.json())
-          .then((rows) => {
-            if (Array.isArray(rows)) {
-              const found = rows.find((f) => Number(f.follower_id) === Number(userData.id));
-              setIsFollowing(!!found);
-            }
-          })
-          .catch(() => {});
-      }
-      return;
-    }
-
-    // otherwise, show current user (requires auth)
-    if (!userData?.token) {
-      setLoading(false);
-      return;
-    }
     fetch(`${API_URL}/api/me`, {
       headers: { Authorization: `Bearer ${userData.token}` },
     })
@@ -54,43 +26,24 @@ export default function Perfil({ userData, route }) {
       .finally(() => setLoading(false));
   }, [userData, viewingUserId]);
 
-  const toggleFollow = async () => {
-    if (!userData || !userData.token) {
-      Alert.alert('Necesitas iniciar sesión', 'Iniciá sesión para seguir usuarios');
-      return;
-    }
-    if (!user || !user.id) return;
-    setFollowLoading(true);
-    const prev = isFollowing;
-    setIsFollowing(!prev); // optimistic
-    try {
-      if (!prev) {
-        const res = await fetch(`${API_URL}/api/follows`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userData.token}` },
-          body: JSON.stringify({ followed_id: user.id }),
-        });
-        if (!res.ok) {
-          setIsFollowing(prev);
-          Alert.alert('Error', 'No se pudo seguir al usuario');
-        }
-      } else {
-        const res = await fetch(`${API_URL}/api/follows/${user.id}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${userData.token}` },
-        });
-        if (!res.ok) {
-          setIsFollowing(prev);
-          Alert.alert('Error', 'No se pudo dejar de seguir al usuario');
-        }
-      }
-    } catch (e) {
-      setIsFollowing(prev);
-      Alert.alert('Error', 'No se pudo actualizar seguimiento');
-    } finally {
-      setFollowLoading(false);
-    }
-  };
+  // Cargar publicaciones del perfil (si viewingUserId está presente, mostrar las de ese usuario)
+  useEffect(() => {
+    const ownerId = viewingUserId ?? user?.id;
+    if (!ownerId) return;
+    setPostsLoading(true);
+    fetch(`${API_URL}/api/post/user/${ownerId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setPosts(data);
+        else if (data && Array.isArray(data.posts)) setPosts(data.posts);
+        else setPosts([]);
+      })
+      .catch((err) => {
+        console.error('Error cargando posts de usuario', err);
+        setPosts([]);
+      })
+      .finally(() => setPostsLoading(false));
+  }, [viewingUserId, user]);
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
 
@@ -121,22 +74,22 @@ export default function Perfil({ userData, route }) {
       </View>
 
       <View style={styles.itemList}>
-        {/* Aquí podrías listar publicaciones del usuario o acciones */}
-        {[1, 2, 3].map((i) => (
-          <TouchableOpacity key={i} style={styles.itemCard}>
-            <View style={styles.itemIconBox}>
-              <FontAwesome name="shapes" size={32} color="#888" />
-            </View>
-            <View style={styles.itemContent}>
-              <Text style={styles.itemTitle}>Ejemplo</Text>
-              <Text style={styles.itemDescription}>Publicación de ejemplo.</Text>
-              <Text style={styles.itemTime}>Hoy · 23 min</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={22} color="#aaa" />
-          </TouchableOpacity>
-        ))}
+        {loading ? (
+          <ActivityIndicator size="large" color="#2979FF" style={{ marginTop: 20 }} />
+            ) : (
+              <FlatList
+                data={filteredPosts}
+                keyExtractor={(item) => String(item.id)}
+                renderItem={({ item }) => (
+                <Publicacion
+                  item={{ title: item.title, description: item.description, time: item.time }}
+                  onPress={() => navigation.navigate("Publicacion", { post: item.raw })}
+                />
+              )}
+                ListEmptyComponent={<Text style={{ alignSelf: 'center', marginTop: 20 }}>No hay publicaciones</Text>}
+              />
+        )}
       </View>
-
     </View>
   );
 }

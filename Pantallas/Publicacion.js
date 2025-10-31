@@ -24,8 +24,11 @@ const PublicationScreen = ({ route, navigation, userData }) => {
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState("");
   const [ratingLoading, setRatingLoading] = useState(false);
-  const publication = route && route.params && route.params.publication ? route.params.publication : {};
+  // Support passing a `publication` object or a `postId` param.
+  const [publication, setPublication] = useState(route?.params?.publication ?? null);
+  const [loadingPublication, setLoadingPublication] = useState(!route?.params?.publication && !!(route?.params?.postId || route?.params?.id));
 
+  // When publication changes (or is provided later), set map center if it has a location.
   useEffect(() => {
     (async () => {
       // Si la publicación trae una ubicación (seleccionada en NuevaPublicacion), usarla
@@ -58,12 +61,39 @@ const PublicationScreen = ({ route, navigation, userData }) => {
         longitudeDelta: 0.05,
       });
     })();
-  }, []);
+  }, [publication]);
+
+  // If a postId was provided, fetch the publication from the backend
+  useEffect(() => {
+    const postId = route?.params?.postId ?? route?.params?.id;
+    if (!postId) return;
+    // If we already have a publication object, skip fetching
+    if (publication) return;
+
+    let mounted = true;
+    (async () => {
+      setLoadingPublication(true);
+      try {
+        const res = await fetch(`${API_URL}/api/post/${postId}`);
+        if (!res.ok) throw new Error('Network response not ok');
+        const data = await res.json();
+        // backend returns object (controller returns respuesta[0])
+        if (mounted) setPublication(data);
+      } catch (e) {
+        console.error('Error cargando publicación por id', e);
+        Alert.alert('Error', 'No se pudo cargar la publicación');
+      } finally {
+        if (mounted) setLoadingPublication(false);
+      }
+    })();
+
+    return () => { mounted = false };
+  }, [route?.params?.postId, route?.params?.id]);
 
   useEffect(() => {
     // comprobar si está en favoritos
     (async () => {
-      if (!userData || !userData.token || !publication.id) return;
+      if (!userData || !userData.token || !publication?.id) return;
       try {
         const res = await fetch(`${API_URL}/api/favorites`, {
           headers: { Authorization: `Bearer ${userData.token}` }

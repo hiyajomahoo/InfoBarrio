@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,21 +6,83 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import Publicacion from "../components/botonPublicacion.js";
 import { FontAwesome } from "@expo/vector-icons";
-
-const DATA = [
-  {
-    id: "1",
-    title: "Title",
-    description:
-      "Description duis aute irure dolor in reprehenderit in voluptate velit.",
-    time: "23 min",
-  }
-];
+import axios from "axios";
+import API_URL from "../config/api";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function Home({ navigation }) {
+
+  const [posts, setPosts] = useState([]);
+  const [filteredPosts, setFilteredPosts] = useState([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+    const fetchAll = async () => {
+      setLoading(true);
+      const endpoints = [
+        `${API_URL}/api/post`,
+      ];
+      let got = false;
+      for (const url of endpoints) {
+        try {
+          const res = await axios.get(url);
+          if (!res || !res.data) continue;
+          const data = res.data;
+          let arr = [];
+          if (Array.isArray(data)) arr = data;
+          else if (Array.isArray(data.posts)) arr = data.posts;
+          else if (data.rows && Array.isArray(data.rows)) arr = data.rows;
+          if (arr.length) {
+            // normalize minimal fields
+            const norm = arr.map((p) => ({
+              id: p.id ?? p.post_id ?? Math.random().toString(),
+              title: p.title ?? p.titulo ?? "Sin título",
+              description: p.description ?? p.descripcion ?? "",
+              time: p.created_at ? new Date(p.created_at).toLocaleDateString() : (p.time ?? ""),
+              raw: p,
+            }));
+            setPosts(norm);
+            setFilteredPosts(norm);
+            got = true;
+            break;
+          }
+        } catch (e) {
+          // try next endpoint
+        }
+      }
+      if (!got) {
+        setPosts([]);
+        setFilteredPosts([]);
+      }
+      setLoading(false);
+    };
+
+    fetchAll();
+  })
+  return unsubscribe
+  }, []);
+
+  // filter posts when search changes
+  useEffect(() => {
+    if (!search) {
+      setFilteredPosts(posts);
+      return;
+    }
+    const q = search.trim().toLowerCase();
+    const filtered = posts.filter((p) => {
+      const t = (p.title || "").toLowerCase();
+      const d = (p.description || "").toLowerCase();
+      return t.includes(q) || d.includes(q);
+    });
+    setFilteredPosts(filtered);
+  }, [search, posts]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>InfoBarrio</Text>
@@ -31,18 +93,31 @@ export default function Home({ navigation }) {
           color="#888"
           style={{ marginLeft: 8 }}
         />
-        <TextInput placeholder="Buscar..." style={styles.searchInput} />
+        <TextInput
+          placeholder="Buscar..."
+          style={styles.searchInput}
+          value={search}
+          onChangeText={setSearch}
+          returnKeyType="search"
+        />
       </View>
-      <View style={styles.filterRow}>
-        <TouchableOpacity style={styles.filterBtn}>
-          <Text style={styles.filterText}>Ofertas Servicios</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.filterBtn}>
-          <Text style={styles.filterText}>Búsqueda Servicios</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.feedListContainer}>
-        <Publicacion item={DATA[0]} onPress={() => navigation.navigate("Publicacion")}/>
+
+      <View style={{ flex: 1, paddingTop: 12 }}>
+        {loading ? (
+          <ActivityIndicator size="large" color="#2979FF" style={{ marginTop: 20 }} />
+        ) : (
+          <FlatList
+            data={filteredPosts}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={({ item }) => (
+              <Publicacion
+                item={{ title: item.title, description: item.description, time: item.time }}
+                onPress={() => navigation.navigate("Publicacion", { post: item.raw })}
+              />
+            )}
+            ListEmptyComponent={<Text style={{ alignSelf: 'center', marginTop: 20 }}>No hay publicaciones</Text>}
+          />
+        )}
       </View>
     </View>
   );

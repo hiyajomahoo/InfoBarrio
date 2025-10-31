@@ -64,10 +64,10 @@ app.use(errorHandler)
 
 // Puerto y arranque del servidor
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, () => {
     console.log(`Servidor escuchando en puerto ${PORT} en todas las interfaces`);
     console.log('Intentar acceder desde:');
     console.log(`- Local: http://localhost:${PORT}`);
-    console.log(`- Red local: http://192.168.100.128:${PORT}`);
+    console.log(`- Red local: http://:${PORT}`);
     console.log('CORS configurado para permitir todas las conexiones en desarrollo');
 });
