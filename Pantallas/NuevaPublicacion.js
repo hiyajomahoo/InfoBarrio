@@ -160,43 +160,9 @@ export default function NuevaPublicacion({ navigation, userData }) {
             keyboardType="numeric"
           />
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.label}>Ubicación</Text>
-          {/* Mostrar coordenadas seleccionadas o mensaje */}
-          <View style={{ marginBottom: 8 }}>
-            <Text style={{ color: "#333" }}>
-              {selectedLocation
-                ? `${selectedLocation.latitude.toFixed(6)}, ${selectedLocation.longitude.toFixed(6)}`
-                : "Seleccioná un punto en el mapa abajo"}
-            </Text>
-          </View>
-        </View>
       </View>
 
       {/* Mapa para seleccionar ubicación */}
-      <Text style={styles.label}>Seleccionar ubicación en el mapa *</Text>
-      <View style={styles.mapContainer}>
-        {mapRegion ? (
-          <MapView
-            style={styles.map}
-            initialRegion={mapRegion}
-            onPress={(e) => {
-              const coord = e.nativeEvent.coordinate;
-              setSelectedLocation({
-                latitude: coord.latitude,
-                longitude: coord.longitude,
-              });
-              setUbicacion(`${coord.latitude.toFixed(6)}, ${coord.longitude.toFixed(6)}`);
-            }}
-          >
-            {selectedLocation && (
-              <Marker coordinate={selectedLocation} title="Ubicación seleccionada" />
-            )}
-          </MapView>
-        ) : (
-          <Text>Cargando mapa...</Text>
-        )}
-      </View>
       <TouchableOpacity style={styles.button} onPress={handlePublish}>
         <Text style={styles.buttonText}>Publicar</Text>
       </TouchableOpacity>
