@@ -1,3 +1,15 @@
+/*
+  Controlador: Post
+  - CRUD y queries comunes para publicaciones.
+  - createPost: inserta una publicación en la BD.
+  - getNewestPost: obtiene los últimos 5 posts (sin trabajos, type 4).
+  - getPost: obtiene detalle de una publicación por ID.
+  - getPosts: obtiene todas las publicaciones.
+  - getPostsByType: filtra publicaciones por tipo.
+  - getPostsByUser: filtra publicaciones por usuario.
+  - deletePost: elimina una publicación.
+  - editPost: actualiza una publicación.
+*/
 import db from "../config/database.js"
 
 export const createPost = async (req, res) => {

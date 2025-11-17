@@ -1,3 +1,9 @@
+/*
+  Controlador: Favoritos
+  - addFavorite: agrega una publicación a los favoritos del usuario.
+  - removeFavorite: elimina una publicación de los favoritos.
+  - listFavorites: lista todos los favoritos del usuario autenticado.
+*/
 import Favorite from '../models/favorite.model.js'
 
 export const addFavorite = async (req, res) => {

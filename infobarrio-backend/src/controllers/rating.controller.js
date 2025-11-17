@@ -1,3 +1,9 @@
+/*
+  Controlador: Calificaciones
+  - addRating: registra o actualiza una calificación (stars + comment) de un usuario a otro.
+    También recalcula el promedio y actualiza el campo reputation en la tabla users.
+  - getRatings: obtiene todas las calificaciones recibidas por un usuario específico.
+*/
 import Rating from '../models/rating.model.js'
 import UserModel from '../models/user.model.js'
 

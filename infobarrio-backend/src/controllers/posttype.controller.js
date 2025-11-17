@@ -1,3 +1,7 @@
+/*
+  Controlador: Tipos de Publicación
+  - listPostTypes: obtiene la lista de tipos de publicación disponibles (Venta, Compra, Alquiler, Servicio, etc.).
+*/
 import PostType from '../models/posttype.model.js'
 
 export const listPostTypes = async (req, res) => {

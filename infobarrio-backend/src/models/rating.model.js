@@ -1,3 +1,9 @@
+/*
+  Modelo: Calificaciones
+  - addOrUpdate: inserta o actualiza una calificación usando ON DUPLICATE KEY UPDATE.
+  - findByRated: obtiene todas las calificaciones recibidas por un usuario (con datos del calificador).
+  - avgStars: calcula el promedio de estrellas recibidas por un usuario.
+*/
 import db from "../config/database.js"
 
 export const addOrUpdate = async ({ rater_id, rated_id, stars, comment }) => {

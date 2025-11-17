@@ -1,3 +1,10 @@
+/*
+  Componente: Btn
+  - Botón simple reutilizable usado en formularios o acciones.
+  - Props:
+    - title: texto a mostrar
+    - onPress: función que se ejecuta al pulsar el botón
+*/
 import { Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 function Btn({ title, onPress }) {

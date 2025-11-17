@@ -1,3 +1,9 @@
+/*
+  Modelo: Favoritos
+  - add: agrega una publicación a favoritos (usa INSERT ... ON DUPLICATE para evitar duplicados).
+  - remove: elimina una publicación de los favoritos.
+  - findByUser: obtiene todos los favoritos de un usuario (con datos de la publicación).
+*/
 import db from "../config/database.js"
 
 export const add = async ({ user_id, post_id }) => {

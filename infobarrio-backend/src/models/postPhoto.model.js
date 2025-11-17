@@ -1,3 +1,9 @@
+/*
+  Modelo: Fotos de Publicación
+  - create: inserta una foto asociada a una publicación.
+  - findByPostId: obtiene todas las fotos de una publicación específica.
+  - remove: elimina un registro de foto de la BD.
+*/
 import db from "../config/database.js"
 
 export const create = async ({ post_id, url }) => {

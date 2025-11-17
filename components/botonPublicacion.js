@@ -1,8 +1,16 @@
+/*
+  Componente: botonPublicacion.js
+  - Componente reutilizable que muestra una fila (item) de publicación en listas.
+  - Props:
+    - item: objeto que representa la publicación (title, description, image, time...)
+    - onPress: función llamada al pulsar el elemento
+*/
 import { StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import { FontAwesome } from "@expo/vector-icons";
 
 
 function Publicacion({ item, onPress }) {
+  // Si item.image existe, mostramos la imagen; si no, un icono placeholder
   return (
     <TouchableOpacity onPress={onPress} style={styles.feedItem}>
       <View style={styles.feedImagePlaceholder}>
@@ -12,6 +20,8 @@ function Publicacion({ item, onPress }) {
           <FontAwesome name="picture-o" size={40} color="#aaa" />
         )}
       </View>
+
+      {/* Contenedor de texto principal */}
       <View style={{ flex: 1 }}>
         <Text style={styles.feedTitle}>{item.title}</Text>
         <Text style={styles.feedDesc}>{item.description}</Text>
@@ -20,6 +30,8 @@ function Publicacion({ item, onPress }) {
           <Text style={styles.feedTime}>Today • {item.time}</Text>
         </View>
       </View>
+
+      {/* Icono que indica navegación al detalle */}
       <FontAwesome name="chevron-right" size={20} color="#888" />
     </TouchableOpacity>
   );

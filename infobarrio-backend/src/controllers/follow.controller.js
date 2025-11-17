@@ -1,3 +1,10 @@
+/*
+  Controlador: Seguimiento
+  - followUser: el usuario autenticado comienza a seguir a otro.
+  - unfollowUser: el usuario deja de seguir a otro.
+  - getFollowers: obtiene la lista de seguidores de un usuario.
+  - getFollowing: obtiene la lista de usuarios que sigue un usuario.
+*/
 import Follow from '../models/follow.model.js'
 
 export const followUser = async (req, res) => {

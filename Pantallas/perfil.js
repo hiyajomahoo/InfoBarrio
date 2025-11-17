@@ -1,3 +1,10 @@
+/*
+  Pantalla: Perfil
+  - Muestra información de un usuario y sus publicaciones.
+  - Si `route.params.userId` está presente, muestra el perfil de ese usuario,
+    si no, intenta obtener el perfil del usuario autenticado mediante `/api/me`.
+  - Permite seguir/dejar de seguir y muestra la lista de publicaciones del usuario.
+*/
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert, FlatList } from "react-native";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
@@ -15,6 +22,7 @@ export default function Perfil({ userData, route, navigation }) {
   const [postsLoading, setPostsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Normaliza arrays de posts recibidos de distintas respuestas del backend
   const normalizePosts = (arr) => {
     if (!Array.isArray(arr)) return [];
     return arr.map((item) => ({
@@ -80,6 +88,7 @@ export default function Perfil({ userData, route, navigation }) {
     fetchProfileAndPosts();
   }
 
+  // Toggle follow/unfollow con manejo optimista de UI
   const toggleFollow = async () => {
     if (!userData || !userData.token) {
       Alert.alert('Necesitas iniciar sesión', 'Iniciá sesión para seguir usuarios');

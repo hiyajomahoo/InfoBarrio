@@ -1,3 +1,10 @@
+/*
+  Pantalla: Publicacion (detalle)
+  - Muestra los detalles de una publicación concreta.
+  - Soporta recibir la publicación por `route.params.publication` o bien
+    un `postId` para buscarla desde la API.
+  - Permite marcar favorito, seguir autor y enviar calificaciones.
+*/
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -31,6 +38,7 @@ const PublicationScreen = ({ route, navigation, userData }) => {
     !route?.params?.publication && !!(route?.params?.postId || route?.params?.id || route?.params?.post)
   );
   
+  // Helper para leer múltiples nombres de campo posibles
   const getField = (obj, ...keys) => {
     if (!obj) return undefined;
     for (const k of keys) {
@@ -75,7 +83,7 @@ const PublicationScreen = ({ route, navigation, userData }) => {
   }, [publication]);
 
   useEffect(() => {
-  const postId = route?.params?.postId ?? route?.params?.id ?? route?.params?.postId;
+    const postId = route?.params?.postId ?? route?.params?.id ?? route?.params?.postId;
     if (!postId) return;
     // Si ya tenemos un objeto publication, evitar refetch
     if (publication) return;
@@ -86,11 +94,11 @@ const PublicationScreen = ({ route, navigation, userData }) => {
       try {
         const res = await fetch(`${API_URL}/api/post/${postId}`);
         if (!res.ok) throw new Error('Network response not ok');
-  const data = await res.json();
-  // el backend puede devolver arreglo u objeto; normalizar a un solo objeto
-  let pub = data;
-  if (Array.isArray(data) && data.length) pub = data[0];
-  if (mounted) setPublication(pub);
+        const data = await res.json();
+        // el backend puede devolver arreglo u objeto; normalizar a un solo objeto
+        let pub = data;
+        if (Array.isArray(data) && data.length) pub = data[0];
+        if (mounted) setPublication(pub);
       } catch (e) {
         console.error('Error cargando publicación por id', e);
         Alert.alert('Error', 'No se pudo cargar la publicación');
@@ -105,7 +113,7 @@ const PublicationScreen = ({ route, navigation, userData }) => {
   useEffect(() => {
     // comprobar si está en favoritos
     (async () => {
-  if (!userData || !userData.token || !getField(publication, 'id', 'post_id')) return;
+      if (!userData || !userData.token || !getField(publication, 'id', 'post_id')) return;
       try {
         const res = await fetch(`${API_URL}/api/favorites`, {
           headers: { Authorization: `Bearer ${userData.token}` }
@@ -127,8 +135,8 @@ const PublicationScreen = ({ route, navigation, userData }) => {
     (async () => {
       if (!userData || !userData.token || !getField(publication, 'user_id', 'userId', 'author_id')) return;
       try {
-  const targetId = getField(publication, 'user_id', 'userId', 'author_id')
-  const res = await fetch(`${API_URL}/api/follows/followers/${targetId}`);
+        const targetId = getField(publication, 'user_id', 'userId', 'author_id')
+        const res = await fetch(`${API_URL}/api/follows/followers/${targetId}`);
         const data = await res.json();
         if (Array.isArray(data)) {
           const found = data.find((f) => Number(f.follower_id) === Number(userData.id));
@@ -141,19 +149,19 @@ const PublicationScreen = ({ route, navigation, userData }) => {
   }, [userData, publication]);
 
   const toggleFavorite = async () => {
-      if (!userData || !userData.token) {
+    if (!userData || !userData.token) {
       Alert.alert('Necesitas iniciar sesión', 'Iniciá sesión para guardar favoritos');
       return;
     }
     setFavLoading(true);
     const previous = favorited;
-  setFavorited(!previous);
+    setFavorited(!previous);
     try {
       if (!previous) {
         const res = await fetch(`${API_URL}/api/favorites`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userData.token}` },
-    body: JSON.stringify({ post_id: getField(publication, 'id', 'post_id') })
+          body: JSON.stringify({ post_id: getField(publication, 'id', 'post_id') })
         });
         if (!res.ok) {
           setFavorited(previous);
@@ -186,7 +194,7 @@ const PublicationScreen = ({ route, navigation, userData }) => {
     if (!targetId) return;
     setFollowLoading(true);
     const prev = isFollowing;
-  setIsFollowing(!prev);
+    setIsFollowing(!prev);
     try {
       if (!prev) {
         const res = await fetch(`${API_URL}/api/follows`, {
@@ -231,7 +239,7 @@ const PublicationScreen = ({ route, navigation, userData }) => {
     }
     setRatingLoading(true);
     try {
-  const res = await fetch(`${API_URL}/api/ratings`, {
+      const res = await fetch(`${API_URL}/api/ratings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userData.token}` },
         body: JSON.stringify({ rated_id: getField(publication, 'user_id', 'userId', 'author_id'), stars, comment })

@@ -1,3 +1,10 @@
+/*
+  Controlador: Fotos
+  - uploadPhotos: carga archivos de imagen asociados a una publicación.
+    Guarda los archivos en /uploads/ y registra las URLs en la BD.
+  - listPhotos: obtiene la lista de fotos asociadas a una publicación.
+  - deletePhoto: elimina una foto tanto de la BD como del disco (si existe).
+*/
 import PostPhoto from '../models/postPhoto.model.js'
 import path from 'path'
 import fs from 'fs'

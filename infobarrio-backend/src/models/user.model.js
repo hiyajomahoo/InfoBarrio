@@ -1,3 +1,9 @@
+/*
+  Modelo: Usuario
+  - findByUsername: busca un usuario por su username (para login).
+  - findById: obtiene un usuario por ID (datos públicos sin password).
+  - createUser: inserta un nuevo usuario en la BD.
+*/
 import db from "../config/database.js"
 
 export const findByUsername = async (username) => {

@@ -1,3 +1,7 @@
+/*
+  Modelo: Tipo de Publicación
+  - findAll: obtiene la lista completa de tipos de publicación disponibles.
+*/
 import db from "../config/database.js"
 
 export const findAll = async () => {

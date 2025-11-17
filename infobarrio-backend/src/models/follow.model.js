@@ -1,3 +1,10 @@
+/*
+  Modelo: Seguimiento
+  - follow: crea una relación de seguimiento (usa INSERT ... ON DUPLICATE KEY para evitar duplicados).
+  - unfollow: elimina una relación de seguimiento.
+  - followersOf: obtiene los IDs de los seguidores de un usuario.
+  - followingOf: obtiene los IDs de los usuarios que sigue un usuario.
+*/
 import db from "../config/database.js"
 
 export const follow = async ({ follower_id, followed_id }) => {

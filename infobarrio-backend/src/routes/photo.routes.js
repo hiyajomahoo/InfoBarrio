@@ -1,3 +1,29 @@
+/**
+ * Photo Routes Module
+ * 
+ * Define endpoints para gestionar fotos de publicaciones y fotos de perfil
+ * Utiliza multer para manejo de carga de archivos con almacenamiento en disco local
+ * 
+ * Multer Storage Configuration:
+ * - Destino: carpeta /uploads/ en raíz del proyecto
+ * - Nombre de archivo: fieldname-timestamp-randomNumber.ext
+ * - Máximo 6 archivos por upload de post
+ * 
+ * Endpoints para fotos de publicaciones:
+ * - POST /api/post/:postId/photos: Subir fotos para publicación (protegido, máx 6 archivos)
+ * - GET /api/post/:postId/photos: Obtener lista de fotos de una publicación (público)
+ * - DELETE /api/post/photos/:photoId: Eliminar foto específica (protegido)
+ * 
+ * Endpoint para foto de perfil:
+ * - POST /api/users/photo: Subir/actualizar foto de perfil del usuario autenticado (protegido)
+ *   Realiza actualización directa en BD: UPDATE users SET profile_photo = ? WHERE id = ?
+ * 
+ * Middleware aplicado:
+ * - verifyToken: Verificar JWT válido para endpoints de modificación
+ * - upload.array('files', 6): Procesar múltiples archivos (máx 6) para posts
+ * - upload.single('file'): Procesar un archivo único para foto de perfil
+ */
+
 import { Router } from 'express'
 import multer from 'multer'
 import path from 'path'

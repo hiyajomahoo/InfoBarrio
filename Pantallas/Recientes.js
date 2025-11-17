@@ -1,3 +1,8 @@
+/*
+  Pantalla: Recientes
+  - Similar a Home, pero enfocada en mostrar los anuncios/ trabajos más recientes.
+  - Realiza petición a `${API_URL}/api/post/getNewestPost` y normaliza la respuesta.
+*/
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, TextInput, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert, RefreshControl } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";

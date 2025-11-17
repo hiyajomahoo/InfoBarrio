@@ -1,3 +1,10 @@
+/*
+  Pantalla: Home
+  - Muestra un listado de publicaciones obtenido desde la API.
+  - Incluye búsqueda local sobre título y descripción.
+  - Normaliza distintas respuestas del backend para trabajar con un
+    formato consistente { id, title, description, time, raw }.
+*/
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -22,6 +29,7 @@ export default function Home({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Ejecutar fetch cada vez que la pantalla recibe foco
     const unsubscribe = navigation.addListener('focus', () => {
     const fetchAll = async () => {
       setLoading(true);
@@ -35,6 +43,7 @@ export default function Home({ navigation }) {
           if (!res || !res.data) continue;
           const data = res.data;
           let arr = [];
+          // Acomodar distintas formas de respuesta del backend
           if (Array.isArray(data)) arr = data;
           else if (Array.isArray(data.posts)) arr = data.posts;
           else if (data.rows && Array.isArray(data.rows)) arr = data.rows;
@@ -67,6 +76,7 @@ export default function Home({ navigation }) {
   return unsubscribe
   }, []);
 
+  // Filtrado local: cuando cambia search o posts
   useEffect(() => {
     if (!search) {
       setFilteredPosts(posts);
@@ -104,7 +114,7 @@ export default function Home({ navigation }) {
         {loading ? (
           <ActivityIndicator size="large" color="#2979FF" style={{ marginTop: 20 }} />
         ) : (
-          <FlatList
+          <FlatList 
             data={filteredPosts}
             keyExtractor={(item) => String(item.id)}
             renderItem={({ item }) => (

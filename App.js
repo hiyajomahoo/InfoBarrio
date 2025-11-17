@@ -1,9 +1,17 @@
+/*
+  App.js
+  - Entrada principal de la app React Native.
+  - Configura la navegación (stack + tabs) y mantiene el estado
+    global mínimo: si el usuario está autenticado y sus datos.
+  - Guarda/restaura `userData` usando AsyncStorage para persistencia local.
+*/
 import React, { useState, useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { FontAwesome } from "@expo/vector-icons";
 
+// Import de pantallas (screens) principales
 import Login from "./Pantallas/Login";
 import Register from "./Pantallas/Register";
 import Home from "./Pantallas/Home";
@@ -15,6 +23,10 @@ import Perfil from "./Pantallas/perfil";
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+/*
+  Tabs: definición de las pestañas inferiores (Bottom Tab Navigator).
+  Recibe `userData` y `onLogout` para pasarlos a las pantallas que los necesiten.
+*/
 function Tabs({ userData, onLogout, navigation }) {
   return (
     <Tab.Navigator
@@ -27,6 +39,7 @@ function Tabs({ userData, onLogout, navigation }) {
         },
       }}
     >
+      {/* Perfil: pasa userData y la función de logout */}
       <Tab.Screen
         name="Perfil"
         children={() => (
@@ -42,6 +55,8 @@ function Tabs({ userData, onLogout, navigation }) {
           ),
         }}
       />
+
+      {/* Buscar: pantalla principal de búsqueda (Home) */}
       <Tab.Screen
         name="Buscar"
         component={Home}
@@ -51,6 +66,8 @@ function Tabs({ userData, onLogout, navigation }) {
           ),
         }}
       />
+
+      {/* Crear: nueva publicación */}
       <Tab.Screen
         name="Crear"
         children={() => (
@@ -62,6 +79,8 @@ function Tabs({ userData, onLogout, navigation }) {
           ),
         }}
       />
+
+      {/* Inicio / Recientes */}
       <Tab.Screen
         name="Inicio"
         component={Recientes}
@@ -75,12 +94,19 @@ function Tabs({ userData, onLogout, navigation }) {
   );
 }
 
+/*
+  App: componente raíz que mantiene el estado de autenticación.
+  - `isLoggedIn`: booleano local para saber si el usuario está autenticado.
+  - `userData`: objeto con la información del usuario.
+  - Funciones handleLogin, handleLogout y handleRegister manejan el
+    almacenamiento en AsyncStorage y la navegación.
+*/
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState({});
 
   useEffect(() => {
-    // intentar restaurar sesión desde AsyncStorage
+    // Restaurar sesión desde AsyncStorage al montar la app
     (async () => {
       try {
         const AsyncStorage = await import('@react-native-async-storage/async-storage');
@@ -91,16 +117,15 @@ export default function App() {
           setIsLoggedIn(true);
         }
       } catch (e) {
-        // no hacer nada si falla la restauración
+        // Si falla la restauración, simplemente no iniciamos sesión automáticamente
       }
     })();
   }, []);
 
-  // Función para iniciar sesión
+  // Iniciar sesión: guarda userData y navega a las Tabs
   const handleLogin = (data, navigation) => {
     setUserData(data);
     setIsLoggedIn(true);
-    // guardar en AsyncStorage
     (async () => {
       try {
         const AsyncStorage = await import('@react-native-async-storage/async-storage');
@@ -110,7 +135,7 @@ export default function App() {
     navigation.replace("Tabs");
   };
 
-  // Función para cerrar sesión
+  // Cerrar sesión: limpia estado y AsyncStorage
   const handleLogout = (navigation) => {
     setUserData({});
     setIsLoggedIn(false);
@@ -123,7 +148,7 @@ export default function App() {
     navigation.replace("Login");
   };
 
-  // Función para registrar usuario (simulada)
+  // Registro: comportamiento similar a login (simulado)
   const handleRegister = (data, navigation) => {
     setUserData(data);
     setIsLoggedIn(true);

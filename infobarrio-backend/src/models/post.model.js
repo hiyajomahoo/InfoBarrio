@@ -1,3 +1,10 @@
+/*
+  Modelo: Publicación
+  - create: inserta una nueva publicación.
+  - findById: obtiene una publicación por ID.
+  - update: actualiza datos de una publicación.
+  - remove: elimina una publicación.
+*/
 import db from "../config/database.js"
 
 export const create = async ({ user_id, post_type_id, title, description, price, status }) => {

@@ -1,8 +1,12 @@
+/*
+	index.js
+	- Punto de entrada que Expo usa para registrar el componente raíz.
+	- `registerRootComponent` asegura que la app se registre correctamente
+		tanto en Expo Go como en una build nativa.
+*/
 import { registerRootComponent } from 'expo';
 
 import App from './App';
 
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
+// Registra el componente raíz de la aplicación
 registerRootComponent(App);

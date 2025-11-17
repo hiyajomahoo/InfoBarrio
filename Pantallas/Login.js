@@ -1,3 +1,10 @@
+/*
+  Pantalla: Login
+  - Maneja el formulario de inicio de sesión.
+  - Llama a la ruta `${API_URL}/api/login` con { username, password }.
+  - Si el login es exitoso, ejecuta `onLogin(userWithToken, navigation)` para
+    propagar los datos al App raiz y navegar.
+*/
 import React, { useState } from "react";
 import {
   View,
@@ -24,8 +31,9 @@ export default function Login({ onLogin, navigation }) {
     setError("");
     
     try {
+      // Observabilidad mínima en consola para depuración
       console.log('URL de la API:', API_URL);
-  console.log('Intentando login con username:', username);
+      console.log('Intentando login con username:', username);
       
       const response = await fetch(`${API_URL}/api/login`, {
         method: 'POST',
@@ -44,23 +52,22 @@ export default function Login({ onLogin, navigation }) {
       console.log('Respuesta del servidor:', data);
       
       if (response.ok && data.user) {
+        // onLogin espera el user + token y la navegación
         onLogin({ ...data.user, token: data.token }, navigation);
       } else {
         setError(data.message || "Credenciales incorrectas");
       }
     } catch (e) {
+      // Manejo de errores ampliado para facilitar debugging
       console.log('Error completo:', e);
       if (e.response) {
-        // El servidor respondió con un status code fuera del rango 2xx
         console.log('Datos del error:', e.response.data);
         console.log('Status del error:', e.response.status);
         setError(e.response.data.message || "Error en la autenticación");
       } else if (e.request) {
-        // La petición fue hecha pero no se recibió respuesta
         console.log('Error de conexión - no hay respuesta');
         setError("No se pudo conectar con el servidor");
       } else {
-        // Algo falló al configurar la petición
         console.log('Error de configuración:', e.message);
         setError("Error al procesar la solicitud");
       }

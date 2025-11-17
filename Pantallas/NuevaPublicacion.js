@@ -1,3 +1,10 @@
+/*
+  Pantalla: NuevaPublicacion
+  - Permite crear una nueva publicación (titulo, descripcion, fotos, precio, tipo).
+  - Pide permiso de ubicación para centrar el mapa, pero por ahora la selección
+    de ubicación está comentada (se puede habilitar más adelante).
+  - Envía la publicación al endpoint `${API_URL}/api/post` con Authorization Bearer.
+*/
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -34,6 +41,7 @@ export default function NuevaPublicacion({ navigation, userData }) {
             "Permiso denegado",
             "Necesitamos permiso para acceder a tu ubicación para centrar el mapa"
           );
+          // Ubicación por defecto (Buenos Aires) para mostrar mapa si se deniega permiso
           setMapRegion({
             latitude: -34.6037,
             longitude: -58.3816,
@@ -82,7 +90,7 @@ export default function NuevaPublicacion({ navigation, userData }) {
     };
 
     try {
-  const res = await fetch(`${API_URL}/api/post`, {
+      const res = await fetch(`${API_URL}/api/post`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

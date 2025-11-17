@@ -10,10 +10,16 @@ import {
 import axios from 'axios';
 import API_URL from "../config/api";
 
-// Pantalla de registro de usuario.
-// Notas importantes:
-// - El backend espera username en lugar de email para el login automático.
-// - Tras el registro intentamos hacer login automáticamente usando { username, password }.
+/*
+  Pantalla: Register
+  - Formulario de registro de nuevo usuario.
+  - Recibe: username, email, name, numberPhone, password, dni.
+  - Tras registrar exitosamente (POST /api/usuarios), intenta login automático
+    usando { username, password } y propaga usuario+token a App.js.
+  - Notas importantes:
+    - El backend espera "username" para el login, no email.
+    - Las contraseñas deben coincidir.
+*/
 export default function Register({ navigation, onRegister }) {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -37,7 +43,7 @@ export default function Register({ navigation, onRegister }) {
     setLoading(true);
     setError("");
     try {
-      // Registro del usuario
+      // Registro del usuario a través de POST /api/usuarios
       const registerRes = await axios.post(`${API_URL}/api/usuarios`, {
         username,
         email,
@@ -48,19 +54,19 @@ export default function Register({ navigation, onRegister }) {
       });
 
       if (registerRes.status === 201) {
-        // Registrar ok, ahora iniciar sesión automáticamente usando username (el backend espera username)
+        // Registro ok, ahora iniciar sesión automáticamente usando username
         const { data: loginData } = await axios.post(`${API_URL}/api/login`, {
           username,
           password
         });
 
         if (loginData && loginData.user) {
+          // Propagar usuario + token al componente raíz
           onRegister({ ...loginData.user, token: loginData.token }, navigation);
         } else {
           setError((loginData && loginData.message) || "Registro correcto, pero no se pudo iniciar sesión automáticamente");
         }
       } else {
-        // Si axios devolvió 2xx distinto a 201 (raro), leer mensaje de respuesta
         setError((registerRes.data && registerRes.data.message) || "Error al registrar usuario");
       }
     } catch (e) {

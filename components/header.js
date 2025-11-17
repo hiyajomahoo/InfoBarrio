@@ -1,3 +1,8 @@
+/*
+  Componente: Header
+  - Cabecera visual simple utilizada en pantallas de autenticación.
+  - No recibe props; muestra títulos estáticos.
+*/
 import { StyleSheet, Text, View} from 'react-native';
 
 function Header(){

@@ -8,7 +8,6 @@ import express from "express";
 import cors from "cors"
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
-import helmet from 'helmet'
 import morgan from 'morgan'
 import rateLimit from 'express-rate-limit'
 import fs from 'fs'
